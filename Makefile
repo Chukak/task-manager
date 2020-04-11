@@ -8,6 +8,8 @@ GOBIN=$(GOBASE)/bin
 GOFILES=$(shell find cmd/ -name "*.go")
 PACKAGES_FILES=$(shell find pkg/ -name "*.go")
 
+TIMERS_MODULE_PATH=github.com/chukak/task-manager/pkg/timers
+
 MAKEFLAGS=-silent
 
 build:
@@ -21,10 +23,11 @@ test-package:
 
 test-all: | test test-package
 
+init-modules:
+	GOPATH=$(GOPATH) GOBIN=$(GOBIN) go get $(TIMERS_MODULE_PATH)
+
 run: | build
 	cd $(GOBIN) && ./$(PROJECT_NAME)
 
 clean:
 	GOPATH=$(GOPATH) GOBIN=$(GOBIN) go clean
-
-
