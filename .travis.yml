@@ -1,0 +1,15 @@
+language: go
+go:
+  - 1.13.x
+  - 1.14.x
+
+os:
+  - linux
+  - osx
+
+install:
+  - make init-modules
+
+script:
+  - make build
+  - make test-all
