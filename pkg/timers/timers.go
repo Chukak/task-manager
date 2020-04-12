@@ -46,6 +46,7 @@ type DeadlineTimerManage interface {
 	Cancel()
 	AsLoop(bool)
 	IsRunning()
+	IsLoop()
 }
 
 // DeadlineTimer calls function after expired time.
@@ -55,6 +56,7 @@ type DeadlineTimer struct {
 	duration  time.Duration
 	loop      bool
 	running   int32
+	canceled  chan bool
 	CallTimes int
 }
 
@@ -65,22 +67,25 @@ func NewDeadlineTimer() DeadlineTimer {
 
 // ExpiresFromNow calls function after expired time.
 func (dtimer *DeadlineTimer) ExpiresFromNow(interval time.Duration, fn utility.BindedFunction) {
-	if !dtimer.loop {
+	if atomic.LoadInt32(&dtimer.running) == 0 {
 		dtimer.t = time.NewTimer(interval)
 		dtimer.fun = fn
 		atomic.StoreInt32(&dtimer.running, 1)
+		dtimer.canceled = make(chan bool)
 	}
 
 	go func() {
-		<-dtimer.t.C
-
-		if atomic.LoadInt32(&dtimer.running) > 0 {
-			dtimer.fun.F()
-			dtimer.CallTimes++
-			if dtimer.loop {
-				dtimer.ExpiresFromNow(interval, dtimer.fun)
-			} else {
-				atomic.StoreInt32(&dtimer.running, 0)
+		for atomic.LoadInt32(&dtimer.running) > 0 {
+			select {
+			case <-dtimer.t.C:
+				dtimer.fun.F()
+				dtimer.CallTimes++
+				dtimer.t.Reset(interval)
+				if !dtimer.loop {
+					atomic.StoreInt32(&dtimer.running, 0)
+					break
+				}
+			case <-dtimer.canceled:
 			}
 		}
 	}()
@@ -88,8 +93,15 @@ func (dtimer *DeadlineTimer) ExpiresFromNow(interval time.Duration, fn utility.B
 
 // Cancel timer operations.
 func (dtimer *DeadlineTimer) Cancel() bool {
-	ok := dtimer.t.Stop()
+	ok := false
+	if atomic.LoadInt32(&dtimer.running) > 0 {
+		dtimer.canceled <- true
+		ok = dtimer.t.Stop()
+	}
 	atomic.StoreInt32(&dtimer.running, 0)
+	close(dtimer.canceled)
+	dtimer.CallTimes = 0
+
 	return ok
 }
 
@@ -101,4 +113,9 @@ func (dtimer *DeadlineTimer) AsLoop(on bool) {
 // IsRunning returns running status of deadline timer.
 func (dtimer *DeadlineTimer) IsRunning() bool {
 	return atomic.LoadInt32(&dtimer.running) > 0
+}
+
+// IsLoop returns loop status of deadline timer
+func (dtimer *DeadlineTimer) IsLoop() bool {
+	return dtimer.loop
 }
