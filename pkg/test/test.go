@@ -1,7 +1,6 @@
 package test
 
 // todo: improve this package
-
 import (
 	"testing"
 )
