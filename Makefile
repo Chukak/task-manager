@@ -6,6 +6,7 @@ GOBASE=$(shell pwd)
 GOPATH=$(GOBASE)/vendor:$(GOBASE)/cmd/$(PROJECT_NAME):$(GOBASE)/pkg:$(GOBASE)/internal
 GOBIN=$(GOBASE)/bin
 GOFILES=$(shell find cmd/ -name "*.go")
+
 TIMERS_PACKAGE_FILES=$(shell find pkg/timers -name "*.go")
 
 TIMERS_MODULE_PATH=github.com/chukak/task-manager/pkg/timers
@@ -13,6 +14,8 @@ TEST_MODULE_PATH=github.com/chukak/task-manager/pkg/test
 UTILITY_MODULE_PATH=github.com/chukak/task-manager/pkg/utility
 
 MAKEFLAGS=-silent
+
+export CURRENT_SOURCE_PATH=$(shell pwd)
 
 build:
 	GOPATH=$(GOPATH) GOBIN=$(GOBIN) go build $(LDFLAGS) -o $(GOBIN)/$(PROJECT_NAME) $(GOFILES)
