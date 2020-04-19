@@ -1,18 +1,22 @@
 package main
 
 import (
-	"log"
-	"net/http"
 	"os"
+	"time"
+
+	"github.com/gin-contrib/static"
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	// todo
-	fs := http.FileServer(http.Dir(os.Getenv("CURRENT_SOURCE_PATH") + "web/templates"))
-	log.Print(os.Getenv("CURRENT_SOURCE_PATH") + "web/templates")
-	http.Handle("/", fs)
-	err := http.ListenAndServe(":3000", nil)
-	if err != nil {
-		log.Fatal(err)
-	}
+	r := gin.Default()
+	r.Use(static.Serve("/", static.LocalFile(os.Getenv("CURRENT_SOURCE_PATH")+"bin/web/src/", true)))
+	api := r.Group("/api")
+	api.GET("/time", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"time": time.Now().Format("3:4:5"),
+		})
+	})
+
+	r.Run()
 }

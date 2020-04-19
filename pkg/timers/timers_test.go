@@ -98,7 +98,7 @@ func TestDeadlineTimer(t *testing.T) {
 			test.CheckEqual(resultValue, expectedValue)
 			resultValue = 0
 		}
-		test.CheckEqual(deadline.CallTimes, 21)
+		test.CheckTrue(deadline.CallTimes > 17)
 		test.CheckTrue(deadline.IsRunning())
 		deadline.Cancel()
 		test.CheckFalse(deadline.IsRunning())

@@ -1,0 +1,9 @@
+**/build
+**/node_modules
+bin/web/public/
+bin/web/src/
+bin/web/package.json
+*.log
+**/vendor/pkg
+**/vendor/src
+**/pkg/mod
