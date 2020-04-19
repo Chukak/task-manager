@@ -20,8 +20,6 @@ GIN_STATIC_MODULE_URL=github.com/gin-contrib/static
 GODEP_INTERNAL=$(TIMERS_MODULE_PATH) $(TEST_MODULE_PATH) $(UTILITY_MODULE_PATH)
 GODEP_EXTERNAL=$(GIN_STATIC_MODULE_URL) $(GIN_MODULE_URL)
 
-MAKEFLAGS=-silent
-
 REACT_BIN_DIRECTORY=$(shell pwd)/bin/web/
 REACT_LOG=$(REACT_BIN_DIRECTORY)/react.log
 
@@ -74,7 +72,7 @@ test-all: | test test-package
 
 init-modules:
 	@echo Update dependepcies... 
-	$(foreach dep, $(GODEP_INTERNAL), $(shell GOPATH=$(GOPATH) GOBIN=$(GOBIN) go get $(dep))); \
+	$(foreach dep, $(GODEP_INTERNAL), $(shell GOPATH=$(GOPATH) GOBIN=$(GOBIN) go get $(dep))) \
 	$(foreach dep, $(GODEP_EXTERNAL), $(shell GOPATH=$(GOPATH) GOBIN=$(GOBIN) go get -u $(dep))) 
 
 run: | build react-run
