@@ -7,7 +7,14 @@ os:
   - linux
   - osx
 
+addons:
+  apt:
+    packages:
+      - npm
+      - nodejs
+
 install:
+  - npm install -g create-react-app
   - make init-modules
 
 script:
