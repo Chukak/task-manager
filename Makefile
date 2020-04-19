@@ -17,8 +17,9 @@ UTILITY_MODULE_PATH=github.com/chukak/task-manager/pkg/utility
 GIN_MODULE_URL=github.com/gin-gonic/gin
 GIN_STATIC_MODULE_URL=github.com/gin-contrib/static
 
-GODEP_INTERNAL=$(TIMERS_MODULE_PATH) $(TEST_MODULE_PATH) $(UTILITY_MODULE_PATH)
-GODEP_EXTERNAL=$(GIN_STATIC_MODULE_URL) $(GIN_MODULE_URL)
+GO_DEP_DIRECTORY=vendor/src/*
+GO_DEPENDENCIES=$(TIMERS_MODULE_PATH) $(TEST_MODULE_PATH) $(UTILITY_MODULE_PATH) \
+	$(GIN_STATIC_MODULE_URL) $(GIN_MODULE_URL)
 
 REACT_BIN_DIRECTORY=$(shell pwd)/bin/web/
 REACT_LOG=$(REACT_BIN_DIRECTORY)/react.log
@@ -72,8 +73,13 @@ test-all: | test test-package
 
 init-modules:
 	@echo Update dependepcies... 
-	$(foreach dep, $(GODEP_INTERNAL), $(shell GOPATH=$(GOPATH) GOBIN=$(GOBIN) go get $(dep))) \
-	$(foreach dep, $(GODEP_EXTERNAL), $(shell GOPATH=$(GOPATH) GOBIN=$(GOBIN) go get -u $(dep))) 
+	@for dep in $(GO_DEPENDENCIES); do GOPATH=$(GOPATH) GOBIN=$(GOBIN) go get -u $${dep}; done
+
+remove-modules:
+	@echo Removing all dependencies from this project...
+	rm -rf $(GO_DEP_DIRECTORY)
+
+update-modules: | remove-modules init-modules
 
 run: | build react-run
 	cd $(GOBIN) && ./$(PROJECT_NAME) \
