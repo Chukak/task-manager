@@ -119,3 +119,56 @@ func (dtimer *DeadlineTimer) IsRunning() bool {
 func (dtimer *DeadlineTimer) IsLoop() bool {
 	return dtimer.loop
 }
+
+// CountdownTimerManage is a common interface for countdown timers.
+type CountdownTimerManage interface {
+	Run()
+	Finish()
+}
+
+// CountdownTimer updates time every seconds
+type CountdownTimer struct {
+	Sec    int
+	Min    int
+	Hours  int
+	Days   int
+	Tick   chan bool
+	ticker *time.Ticker
+	start  time.Time
+}
+
+// NewCountdownTimer returns a new NewCountdownTimer object.
+func NewCountdownTimer() CountdownTimer {
+	return CountdownTimer{Sec: 0, Min: 0, Hours: 0, Days: 0, Tick: make(chan bool)}
+}
+
+// Run countdiwn timer
+func (ctimer *CountdownTimer) Run() {
+	ctimer.start = time.Now()
+	ctimer.ticker = time.NewTicker(1 * time.Second)
+	go func() {
+		for {
+			tick := <-ctimer.ticker.C
+			diff := tick.Sub(ctimer.start)
+			// time
+			ctimer.Sec = int(diff.Seconds()) % 60
+			ctimer.Min = int(diff.Seconds()) / 60 % 60
+			ctimer.Hours = (int(diff.Seconds()) / (60 * 60)) % 24
+			ctimer.Days = int(diff.Seconds()) / ((60 * 60) * 24)
+			select {
+			case ctimer.Tick <- true:
+			default:
+			}
+		}
+	}()
+}
+
+// Finish countdown timer
+func (ctimer *CountdownTimer) Finish() {
+	ctimer.ticker.Stop()
+	select {
+	case ctimer.Tick <- false:
+	default:
+	}
+	close(ctimer.Tick)
+}

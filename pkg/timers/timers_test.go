@@ -105,3 +105,24 @@ func TestDeadlineTimer(t *testing.T) {
 		test.CheckEqual(deadline.CallTimes, 0)
 	}
 }
+
+func TestCountdownTimer(t *testing.T) {
+	test.SetT(t)
+
+	countdownTimer := NewCountdownTimer()
+
+	countdownTimer.Run()
+	for i := 1; i < 65; i++ {
+		sec := i % 60
+
+		min := i / 60 % 60
+		select {
+		case <-countdownTimer.Tick:
+			test.CheckEqual(countdownTimer.Sec, sec)
+			test.CheckEqual(countdownTimer.Min, min)
+			test.CheckEqual(countdownTimer.Hours, 0)
+			test.CheckEqual(countdownTimer.Days, 0)
+		}
+	}
+	countdownTimer.Finish()
+}
