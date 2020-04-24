@@ -6,11 +6,13 @@ GOBASE=$(shell pwd)
 GOPATH=$(GOBASE)/vendor:$(GOBASE)/cmd/$(PROJECT_NAME):$(GOBASE)/pkg:$(GOBASE)/internal
 GOBIN=$(GOBASE)/bin
 GOFILES=$(shell find cmd/ -name "*.go")
+GO_SOURCES=$(shell find internal/ -name "*.go")
 
 TIMERS_PACKAGE_FILES=$(shell find pkg/timers -name "*.go")
+CHECKS_PACKAGE_FILES=$(shell find pkg/checks -name "*.go")
 
 TIMERS_MODULE_PATH=github.com/chukak/task-manager/pkg/timers
-TEST_MODULE_PATH=github.com/chukak/task-manager/pkg/test
+CHECKS_MODULE_PATH=github.com/chukak/task-manager/pkg/checks
 UTILITY_MODULE_PATH=github.com/chukak/task-manager/pkg/utility
 
 # other
@@ -61,15 +63,17 @@ build: | react-build
 	@echo Building golang modules...
 	GOPATH=$(GOPATH) GOBIN=$(GOBIN) go build $(LDFLAGS) -o $(GOBIN)/$(PROJECT_NAME) $(GOFILES)
 
-test:
+test-src:
 	@echo Running tests...
-	GOPATH=$(GOPATH) GOBIN=$(GOBIN) go test $(GOFILES)
+	# todo: 
+	#GOPATH=$(GOPATH) GOBIN=$(GOBIN) go test $(GO_SOURCES)
 
 test-package:
 	@echo Running package tests...
 	GOPATH=$(GOPATH) GOBIN=$(GOBIN) go test $(TIMERS_PACKAGE_FILES)
+	GOPATH=$(GOPATH) GOBIN=$(GOBIN) go test $(CHECKS_PACKAGE_FILES)
 
-test-all: | test test-package
+test-all: | test-src test-package
 
 init-modules:
 	@echo Update dependepcies... 

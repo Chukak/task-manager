@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	test "github.com/chukak/task-manager/pkg/test"
+	test "github.com/chukak/task-manager/pkg/checks"
 	utility "github.com/chukak/task-manager/pkg/utility"
 )
 
