@@ -65,8 +65,7 @@ build: | react-build
 
 test-src:
 	@echo Running tests...
-	# todo: 
-	#GOPATH=$(GOPATH) GOBIN=$(GOBIN) go test $(GO_SOURCES)
+	GOPATH=$(GOPATH) GOBIN=$(GOBIN) go test $(GO_SOURCES)
 
 test-package:
 	@echo Running package tests...
