@@ -7,6 +7,7 @@ GOPATH=$(GOBASE)/vendor:$(GOBASE)/cmd/$(PROJECT_NAME):$(GOBASE)/pkg:$(GOBASE)/in
 GOBIN=$(GOBASE)/bin
 GOFILES=$(shell find cmd/ -name "*.go")
 GO_SOURCES=$(shell find internal/ -name "*.go")
+GO_SOURCE_DIR=$(GOBASE)/internal
 
 TIMERS_PACKAGE_FILES=$(shell find pkg/timers -name "*.go")
 CHECKS_PACKAGE_FILES=$(shell find pkg/checks -name "*.go")
@@ -65,7 +66,8 @@ build: | react-build
 
 test-src:
 	@echo Running tests...
-	GOPATH=$(GOPATH) GOBIN=$(GOBIN) go test $(GO_SOURCES)
+	cd $(GO_SOURCE_DIR); \
+	GOPATH=$(GOPATH) GOBIN=$(GOBIN) go test ./...
 
 test-package:
 	@echo Running package tests...

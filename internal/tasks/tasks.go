@@ -11,8 +11,8 @@ import (
 type TaskManage interface {
 	AddSubtask(*Task)
 	RemoveSubtask(*Task)
-	Subtasks()
-	CountSubtasks()
+	Subtasks() []*Task
+	CountSubtasks() int
 	Open(bool)
 	SetActive(bool)
 }

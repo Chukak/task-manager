@@ -43,10 +43,10 @@ func (timer *ElapsedTimer) Stop() {
 // DeadlineTimerManage is a common interface for deadline timers.
 type DeadlineTimerManage interface {
 	ExpiresFromNow(time.Duration, utility.BindedFunction)
-	Cancel()
-	AsLoop(bool)
-	IsRunning()
-	IsLoop()
+	Cancel() bool
+	AsLoop(bool) bool
+	IsRunning() bool
+	IsLoop() bool
 }
 
 // DeadlineTimer calls function after expired time.
