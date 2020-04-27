@@ -1,6 +1,7 @@
 package tasks
 
 import (
+	"encoding/json"
 	"math"
 	"testing"
 	"time"
@@ -102,4 +103,60 @@ func TestTaskWithSubtasks(t *testing.T) {
 			test.CheckEqual(task.CountSubtasks(), 10-i-1)
 		}
 	}
+}
+
+func TestTaskToJson(t *testing.T) {
+	test.SetT(t)
+
+	task := NewTask(nil)
+	task.Description = "New task desc!"
+	task.Title = "Task 1"
+	task.Priority = 3
+
+	ticker := time.NewTicker(time.Second * 1)
+	task.SetActive(true)
+	startTask := task.Start
+	for i := 0; i < 3; i++ {
+		<-ticker.C
+	}
+	task.SetActive(false)
+	endTask := task.End
+
+	var data []byte
+	data, err := json.Marshal(task)
+	test.CheckEqual(err, nil)
+	test.CheckTrue(len(data) > 0)
+
+	var values map[string]json.RawMessage
+	err = json.Unmarshal(data, &values)
+	test.CheckEqual(err, nil)
+	test.CheckTrue(len(data) > 0)
+	test.CheckEqual(string(values["description"]), "\"New task desc!\"")
+	test.CheckEqual(string(values["title"]), "\"Task 1\"")
+
+	var priority int = 0
+	test.CheckEqual(json.Unmarshal(values["priority"], &priority), nil)
+	test.CheckEqual(priority, 3)
+
+	var opened bool = false
+	test.CheckEqual(json.Unmarshal(values["opened"], &opened), nil)
+	test.CheckTrue(opened)
+
+	var active bool = false
+	test.CheckEqual(json.Unmarshal(values["active"], &active), nil)
+	test.CheckFalse(active)
+
+	var duration TaskDuration
+	test.CheckEqual(json.Unmarshal(values["duration"], &duration), nil)
+	test.CheckEqual(duration.Seconds, 3)
+	test.CheckEqual(duration.Minutes, 0)
+	test.CheckEqual(duration.Hours, 0)
+	test.CheckEqual(duration.Days, 0)
+
+	var startTaskUnmarshal, endTaskUnmarshal time.Time
+	test.CheckEqual(json.Unmarshal(values["start"], &startTaskUnmarshal), nil)
+	test.CheckEqual(json.Unmarshal(values["end"], &endTaskUnmarshal), nil)
+	// string, because checks package have not == operator for time.Time
+	test.CheckEqual(startTaskUnmarshal.String(), startTask.Round(0).String())
+	test.CheckEqual(endTaskUnmarshal.String(), endTask.Round(0).String())
 }

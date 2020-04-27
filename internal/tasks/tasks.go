@@ -19,26 +19,26 @@ type TaskManage interface {
 
 // TaskDuration store a duration of task
 type TaskDuration struct {
-	Seconds int
-	Minutes int
-	Hours   int
-	Days    int
+	Seconds int `json:"seconds"`
+	Minutes int `json:"minutes"`
+	Hours   int `json:"hours"`
+	Days    int `json:"days"`
 }
 
 // Task store targets, time, duration and all dependencies of this target
 type Task struct {
 	parent      *Task
 	ticker      timers.CountdownTimer
-	Start       time.Time
-	End         time.Time
-	Duration    TaskDuration
+	Start       time.Time    `json:"start"`
+	End         time.Time    `json:"end"`
+	Duration    TaskDuration `json:"duration"`
 	subtasks    []*Task
 	running     int32
-	IsActive    bool
-	IsOpened    bool
-	Title       string
-	Description string
-	Priority    int8
+	IsActive    bool   `json:"active"`
+	IsOpened    bool   `json:"opened"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Priority    int8   `json:"priority"`
 }
 
 // NewTask returns a new Task object
