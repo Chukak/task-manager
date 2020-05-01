@@ -12,7 +12,6 @@ addons:
     packages:
       - npm
       - nodejs
-      - webpack
 
 install:
   - npm install -g create-react-app
