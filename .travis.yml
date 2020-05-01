@@ -12,9 +12,11 @@ addons:
     packages:
       - npm
       - nodejs
+      - webpack
 
 install:
   - npm install -g create-react-app
+  - npm install -g yarn
   - make init-modules
 
 script:
