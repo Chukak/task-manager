@@ -1,23 +1,45 @@
 import React from "react";
 import "./Task.css";
+import { ListItem, ListItemText, ListItemAvatar, Collapse, 
+	Box } from '@material-ui/core'
+import { Assignment, ExpandLess, ExpandMore } from '@material-ui/icons'
+import TaskInfo from './TaskInfo'
 
 export default class Task extends React.Component {
 	constructor(props) {
 		super(props)
-		this.title = ""
-		this.description = ""
-		this.priority = 0
-		this.isOpened = false
-		this.isActive = false
-		this.startTime = ""
-		this.endTime = ""
-		this.duration = "00:00:00"
+
+		this.state = {
+			isCollapsed: false
+		}
+		this.collapseHandler = this.collapseHandler.bind(this)
+	}
+
+	collapseHandler() {
+		this.setState(prev => ({
+			isCollapsed: !prev.isCollapsed
+		}));
 	}
 
 	render() {
 		return <div>
-				<div>{this.props.title}</div>
-				<div>{this.props.description}</div>
-			</div>
+			<Box border={1} borderColor="primary.main" borderRadius={6}>
+			<ListItem button key={this.props.key} onClick={this.collapseHandler}>
+				<ListItemAvatar>
+					<Assignment />
+				</ListItemAvatar>
+				<ListItemText primary={this.props.taskData.title} 
+					second={this.props.taskData.priority}/>
+					{this.state.isCollapsed ? <ExpandLess /> : <ExpandMore />}
+			</ListItem>
+			</Box>
+			<Collapse 
+				key={this.props.key}
+				in={this.state.isCollapsed}
+				timeout='auto'
+				umountOnExit>
+					<TaskInfo taskData={this.props.taskData}></TaskInfo>
+			</Collapse>
+		</div>
 	}
 }

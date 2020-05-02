@@ -1,6 +1,7 @@
 import React from "react";
 import Task from "./Task";
 import "./ListTasks.css";
+import { List } from '@material-ui/core'
 
 export default class ListTasks extends React.Component {
 	constructor(props) {
@@ -21,18 +22,15 @@ export default class ListTasks extends React.Component {
 	}
 
 	render() {
-		console.log(this.state.listTasks)
-		var tasks = this.state.listTasks.map((t) =>
-			<Task title={t.title} 
-				description={t.description} 
-				/>
-		);
-
-		return <div>{tasks}</div>
+		return <div>
+			<List>
+				{this.state.listTasks.map((t, index) => {
+					return (<Task key={index} taskData={t} />);
+				})}
+			</List>
+		</div>
 	}
 
 	componentWillUnmount() {
-		this.state.listTasks = [];
-		this.state.taskCout = 0;
 	}
 }
