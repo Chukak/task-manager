@@ -9,6 +9,7 @@
     "@material-ui/core": "^4.9.12",
     "@material-ui/icons": "^4.9.1",
     "@material-ui/styles": "^4.9.10",
+    "axios": "^0.19.2",
     "babel-loader": "^8.0.1",
     "css-loader": "^3.5.3",
     "react": "^16.13.1",
@@ -20,7 +21,7 @@
   },
   "scripts": {
     "start": "BROWSER=none react-scripts start",
-    "build": "webpack --config webpack.config.js",
+    "build": "webpack -p --config webpack.config.js",
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject",
     "stop": "pkill -SIGINT node"

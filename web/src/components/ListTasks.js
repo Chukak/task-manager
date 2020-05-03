@@ -3,6 +3,8 @@ import Task from "./Task";
 import "./ListTasks.css";
 import { List } from '@material-ui/core'
 
+const axios = require('axios');
+
 export default class ListTasks extends React.Component {
 	constructor(props) {
 		super(props);
@@ -13,19 +15,21 @@ export default class ListTasks extends React.Component {
 	}
 
 	componentDidMount() {
-		fetch('/api/task/all')
-			.then(response => response.json())
-				.then(json => this.setState({
-					taskCount: json.taskCount,
-					listTasks: json.listTasks
-				}));
+		axios.get('/api/task/all')
+			.then(function(response) {
+				console.log(response);
+				this.setState({
+					taskCount: response.data.taskCount,
+					listTasks: response.data.listTasks
+				});
+			}.bind(this));
 	}
 
 	render() {
 		return <div>
 			<List>
 				{this.state.listTasks.map((t, index) => {
-					return (<Task key={index} taskData={t} />);
+					return (<Task key={index} ikey={index} taskData={t} />);
 				})}
 			</List>
 		</div>

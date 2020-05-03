@@ -24,7 +24,7 @@ export default class Task extends React.Component {
 	render() {
 		return <div>
 			<Box border={1} borderColor="primary.main" borderRadius={6}>
-			<ListItem button key={this.props.key} onClick={this.collapseHandler}>
+			<ListItem button key={this.props.ikey} onClick={this.collapseHandler}>
 				<ListItemAvatar>
 					<Assignment />
 				</ListItemAvatar>
@@ -34,10 +34,10 @@ export default class Task extends React.Component {
 			</ListItem>
 			</Box>
 			<Collapse 
-				key={this.props.key}
+				key={this.props.ikey}
 				in={this.state.isCollapsed}
 				timeout='auto'
-				umountOnExit>
+				unmountOnExit>
 					<TaskInfo taskData={this.props.taskData}></TaskInfo>
 			</Collapse>
 		</div>
