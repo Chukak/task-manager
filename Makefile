@@ -29,10 +29,9 @@ REACT_LOG=$(REACT_BIN_DIRECTORY)/react.log
 
 export CURRENT_SOURCE_PATH=$(shell pwd)/
 
-react-prepare:
+react-prepare: | react-clean
 	@echo Preparing react directories...
-	cd $(REACT_BIN_DIRECTORY)/; \
-	rm -rf ./public ./src; \
+	cd $(REACT_BIN_DIRECTORY); \
 	cp -r $(CURRENT_SOURCE_PATH)web/* ./; \
 	cp $(CURRENT_SOURCE_PATH)web/.babelrc ./; \
 	mv ./templates ./public; \
@@ -48,7 +47,7 @@ react-start:
 react-clean:
 	@echo Clean 'bin/web'
 	cd $(REACT_BIN_DIRECTORY); \
-	rm -rf build public src node_modules dist package.json *.log *.lock *.js; \
+	rm -rf build public src node_modules dist *.json *.log *.lock *.js; \
 
 react-run:
 	@echo Running react...
