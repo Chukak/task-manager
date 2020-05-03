@@ -1,7 +1,11 @@
 import React from 'react';
 import SwipeableViews from 'react-swipeable-views';
 import './TaskInfo.css'
-import { AppBar, Tabs, Tab, Box, Typography } from '@material-ui/core'
+import { AppBar, Tabs, Tab, Box, Typography,
+	ButtonGroup, TextField } from '@material-ui/core'
+import PriorityButton from './PriorityButton'
+import DateTimeField from './DateTimeField'
+import ActivityButton from './ActivityButton'
 
 class TabPanelDescription extends React.Component {
 	render() {
@@ -13,7 +17,7 @@ class TabPanelDescription extends React.Component {
 				{this.props.value === this.props.index && (
 					<Box p={3}>
 						<Typography variant="body1">
-							{this.props.description}
+							{this.props.taskData.description}
 						</Typography>
 					</Box>
 				)}
@@ -29,9 +33,51 @@ class TabPanelExtraInfo extends React.Component {
 			id={`full-width-tabpanel-${this.props.index}`}
 			aria-labelledby={`full-width-tab-${this.props.index}`}>
 				{this.props.value === this.props.index && (
-					<Box p={3}>
-						<div></div>
-					</Box>
+					<div>
+						<Box p={4} mt={2} display="flex">
+							<TextField 
+								id="outlined-basic" 
+								label="Title" 
+								variant="outlined"
+								defaultValue={this.props.taskData.title} 
+								inputProps={{
+									maxLength: 10,
+								}} />
+						</Box>
+						<Box p={4} mt={2} display="flex">
+							<Box flexGrow={1}>
+								<Typography variant="h6" color="textPrimary">Task priority: </Typography>
+							</Box>
+							<Box>
+								<PriorityButton priority={this.props.taskData.priority} />
+							</Box>
+						</Box>
+						
+						<Box p={4} mt={2} display="flex">
+							<Box flexGrow={1}>
+								<Typography variant="h6" color="textPrimary">Start date: </Typography>
+							</Box>
+							<Box>
+								<DateTimeField dateTime={this.props.taskData.start} />
+							</Box>
+						</Box>
+						<Box p={4} mt={2} display="flex">
+							<Box flexGrow={1}>
+								<Typography variant="h6" color="textPrimary">End date: </Typography>
+							</Box>
+							<Box>
+								<DateTimeField dateTime={this.props.taskData.start} />
+							</Box>
+						</Box>
+						<Box p={4} mt={2} display="flex" flexDirection="row"> 
+							<Box mr={2}>
+								<ActivityButton buttonName="Open"  isActive={this.props.taskData.opened}/>
+							</Box>
+							<Box ml={2}>
+								<ActivityButton buttonName="Active" isActive={this.props.taskData.active}/>
+							</Box>
+						</Box>
+					</div>
 				)}
 		</div>
 	}
@@ -78,12 +124,17 @@ export default class TaskInfoComponent extends React.Component {
 				axis='x'
 				index={this.state.index}
 				onChangeIndex={this.changeTabIndex} >
-				<TabPanelDescription value={this.state.index} 
+				<TabPanelDescription 
+					value={this.state.index} 
 					index={0} 
 					dir='ltr'
-					description={this.props.taskData.description}>
+					taskData={this.props.taskData}>
 				</TabPanelDescription>
-				<TabPanelExtraInfo value={this.state.index} index={1} dir='ltr'>
+				<TabPanelExtraInfo 
+					value={this.state.index} 
+					index={1} 
+					dir='ltr'
+					taskData={this.props.taskData}>
 				</TabPanelExtraInfo>
 			</SwipeableViews>
 		</div>;

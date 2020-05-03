@@ -1,6 +1,6 @@
 **/build
 **/node_modules
-**/bin/web/
+**/bin
 *.log
 **/vendor/pkg
 **/vendor/src
