@@ -15,10 +15,14 @@ class TabPanelDescription extends React.Component {
 			id={`full-width-tabpanel-${this.props.index}`}
 			aria-labelledby={`full-width-tab-${this.props.index}`}>
 				{this.props.value === this.props.index && (
-					<Box p={3}>
-						<Typography variant="body1">
-							{this.props.taskData.description}
-						</Typography>
+					<Box p={4}>
+						<TextField
+							multiline
+							fullWidth
+							defaultValue={this.props.taskData.description}
+							id="outlined-multiline-flexible"
+							rows={20}
+							variant="outlined" />
 					</Box>
 				)}
 		</div>
