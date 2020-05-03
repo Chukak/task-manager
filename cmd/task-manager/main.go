@@ -13,6 +13,8 @@ import (
 	task "../../internal/tasks"
 )
 
+// All code below only for example!
+
 type ListTask struct {
 	List []*task.Task `json:"listTasks"`
 }
@@ -24,7 +26,13 @@ func main() {
 	t.Description = "This is task description"
 	t.Priority = 4
 
+	t2 := task.NewTask(nil)
+	t2.Title = "Task 2"
+	t2.Description = "This is task 2 description"
+	t2.Priority = 1
+
 	tasks.List = append(tasks.List, t)
+	tasks.List = append(tasks.List, t2)
 	gin.Bind(tasks)
 
 	r := route.NewRoute(":8080")
