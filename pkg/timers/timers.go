@@ -1,6 +1,7 @@
 package timers
 
 import (
+	"log"
 	"sync/atomic"
 	"time"
 
@@ -151,10 +152,12 @@ func (ctimer *CountdownTimer) Run() {
 	atomic.StoreInt32(&ctimer.finished, 0)
 	go func() {
 		for atomic.LoadInt32(&ctimer.finished) == 0 {
+			log.Println("TICK")
 			select {
 			case ctimer.Tick <- true:
 			default:
 			}
+			log.Println("AFTER TICK")
 			tick := <-ctimer.ticker.C
 			diff := tick.Sub(ctimer.start)
 			// time
