@@ -1,6 +1,7 @@
 package timers
 
 import (
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -128,26 +129,38 @@ type CountdownTimerManage interface {
 
 // CountdownTimer updates time every seconds
 type CountdownTimer struct {
-	Sec    int
-	Min    int
-	Hours  int
-	Days   int
-	Tick   chan bool
-	ticker *time.Ticker
-	start  time.Time
+	Sec      int
+	Min      int
+	Hours    int
+	Days     int
+	Tick     chan bool
+	ticker   *time.Ticker
+	start    time.Time
+	finished int32
+	mux      sync.Mutex
 }
 
 // NewCountdownTimer returns a new NewCountdownTimer object.
 func NewCountdownTimer() CountdownTimer {
-	return CountdownTimer{Sec: 0, Min: 0, Hours: 0, Days: 0, Tick: make(chan bool)}
+	return CountdownTimer{Sec: 0, Min: 0, Hours: 0, Days: 0,
+		Tick: make(chan bool), finished: 1, mux: sync.Mutex{}}
 }
 
 // Run countdiwn timer
 func (ctimer *CountdownTimer) Run() {
 	ctimer.start = time.Now()
 	ctimer.ticker = time.NewTicker(1 * time.Second)
+	atomic.StoreInt32(&ctimer.finished, 0)
 	go func() {
 		for {
+			ctimer.mux.Lock()
+			fin := atomic.LoadInt32(&ctimer.finished)
+			ctimer.mux.Unlock()
+
+			if fin > 0 {
+				break
+			}
+
 			tick := <-ctimer.ticker.C
 			diff := tick.Sub(ctimer.start)
 			// time
@@ -165,10 +178,16 @@ func (ctimer *CountdownTimer) Run() {
 
 // Finish countdown timer
 func (ctimer *CountdownTimer) Finish() {
-	ctimer.ticker.Stop()
-	select {
-	case ctimer.Tick <- false:
-	default:
+	if atomic.LoadInt32(&ctimer.finished) == 0 {
+		ctimer.mux.Lock()
+		atomic.StoreInt32(&ctimer.finished, 1)
+		ctimer.mux.Unlock()
+
+		ctimer.ticker.Stop()
+		select {
+		case ctimer.Tick <- false:
+		default:
+		}
+		close(ctimer.Tick)
 	}
-	close(ctimer.Tick)
 }
