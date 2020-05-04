@@ -2,7 +2,6 @@ package tasks
 
 import (
 	"encoding/json"
-	"log"
 	"math"
 	"testing"
 	"time"
@@ -108,28 +107,25 @@ func TestTaskWithSubtasks(t *testing.T) {
 
 func TestTaskToJson(t *testing.T) {
 	test.SetT(t)
-	log.Println("TUTU 1")
+
 	task := NewTask(nil)
 	task.Description = "New task desc!"
 	task.Title = "Task 1"
 	task.Priority = 3
 
 	ticker := time.NewTicker(time.Second * 1)
-	log.Println("TUTU 2")
 	task.SetActive(true)
 	startTask := task.Start
 	for i := 0; i < 3; i++ {
 		<-ticker.C
 	}
 	task.SetActive(false)
-	log.Println("TUTU 3")
 	endTask := task.End
 
 	var data []byte
 	data, err := json.Marshal(task)
 	test.CheckEqual(err, nil)
 	test.CheckTrue(len(data) > 0)
-	log.Println("TUTU 4")
 
 	var values map[string]json.RawMessage
 	err = json.Unmarshal(data, &values)
