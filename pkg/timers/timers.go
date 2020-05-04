@@ -1,7 +1,6 @@
 package timers
 
 import (
-	"log"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -156,11 +155,11 @@ func (ctimer *CountdownTimer) Run() {
 		for {
 			ctimer.mux.Lock()
 			fin := atomic.LoadInt32(&ctimer.finished)
+			ctimer.mux.Unlock()
+
 			if fin > 0 {
 				break
 			}
-			log.Println("A: ", fin)
-			ctimer.mux.Unlock()
 
 			tick := <-ctimer.ticker.C
 			diff := tick.Sub(ctimer.start)
@@ -183,7 +182,6 @@ func (ctimer *CountdownTimer) Finish() {
 		ctimer.mux.Lock()
 		atomic.StoreInt32(&ctimer.finished, 1)
 		ctimer.mux.Unlock()
-		log.Println("Change ")
 
 		ctimer.ticker.Stop()
 		select {
