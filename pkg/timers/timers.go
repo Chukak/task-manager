@@ -177,7 +177,6 @@ func (ctimer *CountdownTimer) Run() {
 // Finish countdown timer
 func (ctimer *CountdownTimer) Finish() {
 	if atomic.LoadInt32(&ctimer.finished) == 0 {
-		// stop timer
 		ctimer.mux.Lock()
 		atomic.StoreInt32(&ctimer.finished, 1)
 		ctimer.mux.Unlock()
