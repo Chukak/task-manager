@@ -1,0 +1,10 @@
+{
+    "go.gopath": "/home/elliot/projects/task-manager:/home/elliot/projects/task-manager/vendor",
+    "terminal.integrated.env.linux": {
+        "GOPATH": "${go.gopath}",
+        "GOBIN": "${go.gopath}/bin"
+    },
+    "emmet.syntaxProfiles": {
+        "javasctipt": "jsx"
+    }
+}
