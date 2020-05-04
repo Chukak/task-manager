@@ -111,7 +111,7 @@ func (t *Task) SetActive(active bool) {
 
 			go func() {
 				for atomic.LoadInt32(&t.running) > 0 {
-					log.Fatal("TIMED")
+					log.Println("TIMED")
 					select {
 					case <-t.ticker.Tick:
 						t.Duration.Seconds = t.ticker.Sec
@@ -123,11 +123,11 @@ func (t *Task) SetActive(active bool) {
 			}()
 		} else {
 			atomic.StoreInt32(&t.running, 0)
-			log.Fatal("FINIDSH 1")
+			log.Println("FINIDSH 1")
 			t.ticker.Finish()
-			log.Fatal("FINIDSH 123")
+			log.Println("FINIDSH 123")
 			t.End = time.Now()
-			log.Fatal("FINIDSH 2")
+			log.Println("FINIDSH 2")
 		}
 	}
 }
