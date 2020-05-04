@@ -1,7 +1,6 @@
 package timers
 
 import (
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -129,48 +128,43 @@ type CountdownTimerManage interface {
 
 // CountdownTimer updates time every seconds
 type CountdownTimer struct {
-	Sec      int
-	Min      int
-	Hours    int
-	Days     int
-	Tick     chan bool
-	ticker   *time.Ticker
-	start    time.Time
-	finished int32
-	mux      sync.Mutex
+	Sec     int
+	Min     int
+	Hours   int
+	Days    int
+	Tick    chan bool
+	ticker  *time.Ticker
+	start   time.Time
+	finish  chan bool
+	running bool
 }
 
 // NewCountdownTimer returns a new NewCountdownTimer object.
 func NewCountdownTimer() CountdownTimer {
 	return CountdownTimer{Sec: 0, Min: 0, Hours: 0, Days: 0,
-		Tick: make(chan bool), finished: 1, mux: sync.Mutex{}}
+		Tick: make(chan bool), finish: make(chan bool), running: false}
 }
 
 // Run countdiwn timer
 func (ctimer *CountdownTimer) Run() {
+	close(ctimer.Tick)
+	ctimer.Tick = make(chan bool)
 	ctimer.start = time.Now()
 	ctimer.ticker = time.NewTicker(1 * time.Second)
-	atomic.StoreInt32(&ctimer.finished, 0)
+	ctimer.running = true
 	go func() {
 		for {
-			ctimer.mux.Lock()
-			fin := atomic.LoadInt32(&ctimer.finished)
-			ctimer.mux.Unlock()
-
-			if fin > 0 {
-				break
-			}
-
-			tick := <-ctimer.ticker.C
-			diff := tick.Sub(ctimer.start)
-			// time
-			ctimer.Sec = int(diff.Seconds()) % 60
-			ctimer.Min = int(diff.Seconds()) / 60 % 60
-			ctimer.Hours = (int(diff.Seconds()) / (60 * 60)) % 24
-			ctimer.Days = int(diff.Seconds()) / ((60 * 60) * 24)
 			select {
-			case ctimer.Tick <- true:
+			case <-ctimer.finish:
+				break
 			default:
+				tick := <-ctimer.ticker.C
+				diff := tick.Sub(ctimer.start)
+				// time
+				ctimer.Sec = int(diff.Seconds()) % 60
+				ctimer.Min = int(diff.Seconds()) / 60 % 60
+				ctimer.Hours = (int(diff.Seconds()) / (60 * 60)) % 24
+				ctimer.Days = int(diff.Seconds()) / ((60 * 60) * 24)
 			}
 		}
 	}()
@@ -178,15 +172,10 @@ func (ctimer *CountdownTimer) Run() {
 
 // Finish countdown timer
 func (ctimer *CountdownTimer) Finish() {
-	if atomic.LoadInt32(&ctimer.finished) == 0 {
-		ctimer.mux.Lock()
-		atomic.StoreInt32(&ctimer.finished, 1)
-		ctimer.mux.Unlock()
-
+	if ctimer.running {
 		ctimer.ticker.Stop()
 		select {
-		case ctimer.Tick <- false:
-		default:
+		case ctimer.finish <- false:
 		}
 		close(ctimer.Tick)
 	}

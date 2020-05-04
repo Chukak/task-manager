@@ -4,7 +4,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/chukak/task-manager/pkg/timers"
+	//"github.com/chukak/task-manager/pkg/timers"
+	timers "../../pkg/timers"
 )
 
 // TaskManage is common interface for tasks
