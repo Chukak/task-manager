@@ -155,16 +155,23 @@ func (ctimer *CountdownTimer) Run() {
 	go func() {
 		for {
 			select {
-			case <-ctimer.finish:
-				break
-			default:
-				tick := <-ctimer.ticker.C
+			case tick := <-ctimer.ticker.C:
+				// send tick
+				select {
+				case ctimer.Tick <- true:
+				}
+
 				diff := tick.Sub(ctimer.start)
 				// time
 				ctimer.Sec = int(diff.Seconds()) % 60
 				ctimer.Min = int(diff.Seconds()) / 60 % 60
 				ctimer.Hours = (int(diff.Seconds()) / (60 * 60)) % 24
 				ctimer.Days = int(diff.Seconds()) / ((60 * 60) * 24)
+			case val := <-ctimer.finish:
+				if val {
+					ctimer.running = false
+					return
+				}
 			}
 		}
 	}()
@@ -173,10 +180,10 @@ func (ctimer *CountdownTimer) Run() {
 // Finish countdown timer
 func (ctimer *CountdownTimer) Finish() {
 	if ctimer.running {
-		ctimer.ticker.Stop()
 		select {
 		case ctimer.finish <- false:
 		}
+		ctimer.ticker.Stop()
 		close(ctimer.Tick)
 	}
 }
