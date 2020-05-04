@@ -147,6 +147,8 @@ func NewCountdownTimer() CountdownTimer {
 
 // Run countdiwn timer
 func (ctimer *CountdownTimer) Run() {
+	close(ctimer.Tick)
+	ctimer.Tick = make(chan bool)
 	ctimer.start = time.Now()
 	ctimer.ticker = time.NewTicker(1 * time.Second)
 	atomic.StoreInt32(&ctimer.finished, 0)
@@ -173,9 +175,9 @@ func (ctimer *CountdownTimer) Run() {
 func (ctimer *CountdownTimer) Finish() {
 	atomic.StoreInt32(&ctimer.finished, 1)
 	ctimer.ticker.Stop()
-	select {
+	/*select {
 	case ctimer.Tick <- false:
 	default:
-	}
+	}*/
 	close(ctimer.Tick)
 }
