@@ -128,26 +128,33 @@ type CountdownTimerManage interface {
 
 // CountdownTimer updates time every seconds
 type CountdownTimer struct {
-	Sec    int
-	Min    int
-	Hours  int
-	Days   int
-	Tick   chan bool
-	ticker *time.Ticker
-	start  time.Time
+	Sec      int
+	Min      int
+	Hours    int
+	Days     int
+	Tick     chan bool
+	ticker   *time.Ticker
+	start    time.Time
+	finished int32
 }
 
 // NewCountdownTimer returns a new NewCountdownTimer object.
 func NewCountdownTimer() CountdownTimer {
-	return CountdownTimer{Sec: 0, Min: 0, Hours: 0, Days: 0, Tick: make(chan bool)}
+	return CountdownTimer{Sec: 0, Min: 0, Hours: 0, Days: 0, Tick: make(chan bool),
+		finished: 1}
 }
 
 // Run countdiwn timer
 func (ctimer *CountdownTimer) Run() {
 	ctimer.start = time.Now()
 	ctimer.ticker = time.NewTicker(1 * time.Second)
+	atomic.StoreInt32(&ctimer.finished, 0)
 	go func() {
-		for {
+		for atomic.LoadInt32(&ctimer.finished) == 0 {
+			select {
+			case ctimer.Tick <- true:
+			default:
+			}
 			tick := <-ctimer.ticker.C
 			diff := tick.Sub(ctimer.start)
 			// time
@@ -155,16 +162,13 @@ func (ctimer *CountdownTimer) Run() {
 			ctimer.Min = int(diff.Seconds()) / 60 % 60
 			ctimer.Hours = (int(diff.Seconds()) / (60 * 60)) % 24
 			ctimer.Days = int(diff.Seconds()) / ((60 * 60) * 24)
-			select {
-			case ctimer.Tick <- true:
-			default:
-			}
 		}
 	}()
 }
 
 // Finish countdown timer
 func (ctimer *CountdownTimer) Finish() {
+	atomic.StoreInt32(&ctimer.finished, 1)
 	ctimer.ticker.Stop()
 	select {
 	case ctimer.Tick <- false:

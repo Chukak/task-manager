@@ -120,7 +120,6 @@ func TestTaskToJson(t *testing.T) {
 		<-ticker.C
 	}
 	task.SetActive(false)
-	time.Sleep(1)
 	endTask := task.End
 
 	var data []byte
