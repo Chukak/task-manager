@@ -113,8 +113,9 @@ func TestTaskToJson(t *testing.T) {
 	task.Title = "Task 1"
 	task.Priority = 3
 
-	ticker := time.NewTicker(time.Second * 1)
 	task.SetActive(true)
+	time.Sleep(time.Millisecond * 10)
+	ticker := time.NewTicker(time.Second * 1)
 	startTask := task.Start
 	for i := 0; i < 3; i++ {
 		<-ticker.C
