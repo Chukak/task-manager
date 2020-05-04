@@ -113,13 +113,11 @@ func (t *Task) SetActive(active bool) {
 				for atomic.LoadInt32(&t.running) > 0 {
 					log.Fatal("TIMED")
 					select {
-					case _, ok := <-t.ticker.Tick:
-						if ok {
-							t.Duration.Seconds = t.ticker.Sec
-							t.Duration.Minutes = t.ticker.Min
-							t.Duration.Hours = t.ticker.Hours
-							t.Duration.Days = t.ticker.Days
-						}
+					case <-t.ticker.Tick:
+						t.Duration.Seconds = t.ticker.Sec
+						t.Duration.Minutes = t.ticker.Min
+						t.Duration.Hours = t.ticker.Hours
+						t.Duration.Days = t.ticker.Days
 					}
 				}
 			}()
