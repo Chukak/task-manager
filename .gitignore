@@ -1,8 +1,6 @@
 **/build
 **/node_modules
-bin/web/public/
-bin/web/src/
-bin/web/package.json
+**/bin
 *.log
 **/vendor/pkg
 **/vendor/src

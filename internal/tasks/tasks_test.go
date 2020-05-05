@@ -158,6 +158,6 @@ func TestTaskToJson(t *testing.T) {
 	test.CheckEqual(json.Unmarshal(values["start"], &startTaskUnmarshal), nil)
 	test.CheckEqual(json.Unmarshal(values["end"], &endTaskUnmarshal), nil)
 	// string, because checks package have not == operator for time.Time
-	test.CheckEqual(startTaskUnmarshal.String(), startTask.Round(0).String())
-	test.CheckEqual(endTaskUnmarshal.String(), endTask.Round(0).String())
+	test.CheckEqual(startTaskUnmarshal.UTC().String(), startTask.UTC().Round(0).String())
+	test.CheckEqual(endTaskUnmarshal.UTC().String(), endTask.UTC().Round(0).String())
 }

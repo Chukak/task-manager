@@ -98,29 +98,31 @@ func (t *Task) Open(o bool) {
 
 // SetActive set this task as active
 func (t *Task) SetActive(active bool) {
-	t.IsActive = active
-	if active {
-		if !t.IsOpened {
-			t.Open(active)
-		}
-		atomic.StoreInt32(&t.running, 1)
-		t.Start = time.Now()
-		t.ticker.Run()
-
-		go func() {
-			for atomic.LoadInt32(&t.running) > 0 {
-				select {
-				case <-t.ticker.Tick:
-					t.Duration.Seconds = t.ticker.Sec
-					t.Duration.Minutes = t.ticker.Min
-					t.Duration.Hours = t.ticker.Hours
-					t.Duration.Days = t.ticker.Days
-				}
+	if active != t.IsActive {
+		t.IsActive = active
+		if active {
+			if !t.IsOpened {
+				t.Open(active)
 			}
-		}()
-	} else {
-		t.ticker.Finish()
-		t.End = time.Now()
-		atomic.StoreInt32(&t.running, 0)
+			atomic.StoreInt32(&t.running, 1)
+			t.Start = time.Now()
+			t.ticker.Run()
+
+			go func() {
+				for atomic.LoadInt32(&t.running) > 0 {
+					select {
+					case <-t.ticker.Tick:
+						t.Duration.Seconds = t.ticker.Sec
+						t.Duration.Minutes = t.ticker.Min
+						t.Duration.Hours = t.ticker.Hours
+						t.Duration.Days = t.ticker.Days
+					}
+				}
+			}()
+		} else {
+			atomic.StoreInt32(&t.running, 0)
+			t.ticker.Finish()
+			t.End = time.Now()
+		}
 	}
 }

@@ -29,35 +29,35 @@ REACT_LOG=$(REACT_BIN_DIRECTORY)/react.log
 
 export CURRENT_SOURCE_PATH=$(shell pwd)/
 
-react-prepare:
+react-prepare: | react-clean
 	@echo Preparing react directories...
-	cd $(REACT_BIN_DIRECTORY)/; \
-	rm -rf ./public ./src; \
+	cd $(REACT_BIN_DIRECTORY); \
 	cp -r $(CURRENT_SOURCE_PATH)web/* ./; \
+	cp $(CURRENT_SOURCE_PATH)web/.babelrc ./; \
 	mv ./templates ./public; \
 
 react-build: | react-prepare
 	@echo Installing react modules...
-	cd $(REACT_BIN_DIRECTORY)/ && npm install && npm run build
+	cd $(REACT_BIN_DIRECTORY) && yarn install && yarn run build
 
 react-start:
 	@echo Start client on http://localhost:3000
-	cd $(REACT_BIN_DIRECTORY)/ && npm start
+	cd $(REACT_BIN_DIRECTORY) && npm start
 
 react-clean:
 	@echo Clean 'bin/web'
-	cd $(REACT_BIN_DIRECTORY)/; \
-	rm -rf build public src node_modules package.json *.log; \
+	cd $(REACT_BIN_DIRECTORY); \
+	rm -rf build public src node_modules dist *.json *.log *.lock *.js; \
 
 react-run:
 	@echo Running react...
-	cd $(REACT_BIN_DIRECTORY)/; \
+	cd $(REACT_BIN_DIRECTORY); \
 	npm start > react.log 2>&1 & \
 
 # todo
 react-stop: 
 	@echo Stopping react...
-	cd $(REACT_BIN_DIRECTORY)/; \
+	cd $(REACT_BIN_DIRECTORY); \
 	npm stop | true \
 
 build: | react-build

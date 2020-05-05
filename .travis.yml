@@ -5,7 +5,7 @@ go:
 
 os:
   - linux
-  - osx
+  # - osx
 
 addons:
   apt:
@@ -15,6 +15,7 @@ addons:
 
 install:
   - npm install -g create-react-app
+  - npm install -g yarn
   - make init-modules
 
 script:

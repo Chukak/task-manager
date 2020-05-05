@@ -1,0 +1,26 @@
+var path = require('path');
+var webpack = require('webpack');
+
+module.exports = {
+	mode: 'production',
+	devtool: 'inline-source-map',
+	entry: path.resolve(__dirname, 'src', 'index.js'),
+  output: {
+		path: path.resolve(__dirname, 'dist'),
+		publicPath: '/',
+    filename: 'bundle.js'
+	},
+	module: {
+		rules: [
+			{
+				test: /\.js/,
+				exclude: /node_modules/,
+        loader: 'babel-loader'
+			},
+			{
+        test: /\.css$/i,
+        loader: 'css-loader',
+      }
+		]
+	}
+}
