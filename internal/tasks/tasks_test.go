@@ -19,7 +19,7 @@ func TestTaskInitialization(t *testing.T) {
 	test.CheckEqual(task.Title, "")
 	test.CheckEqual(task.parent, (*Task)(nil))
 	test.CheckEqual(task.running, 0)
-	test.CheckEqual(len(task.subtasks), 0)
+	test.CheckEqual(len(task.Subtasks), 0)
 	test.CheckFalse(task.IsActive)
 	test.CheckFalse(task.IsOpened)
 }
@@ -75,8 +75,8 @@ func TestTaskWithSubtasks(t *testing.T) {
 
 		subtask1 := NewTask(task)
 		test.CheckEqual(task.CountSubtasks(), 1)
-		test.CheckEqual(len(task.Subtasks()), 1)
-		test.CheckEqual(task.Subtasks()[0], subtask1)
+		test.CheckEqual(len(task.Subtasks), 1)
+		test.CheckEqual(task.Subtasks[0], subtask1)
 		test.CheckEqual(subtask1.parent, task)
 	}
 	{
@@ -91,7 +91,7 @@ func TestTaskWithSubtasks(t *testing.T) {
 			test.CheckEqual(cached[i].CountSubtasks(), 1)
 		}
 
-		allSubtasks := task.Subtasks()
+		allSubtasks := task.Subtasks
 		for i := 0; i < 10; i++ {
 			test.CheckEqual(cached[i], allSubtasks[i])
 		}
@@ -160,4 +160,40 @@ func TestTaskToJson(t *testing.T) {
 	// string, because checks package have not == operator for time.Time
 	test.CheckEqual(startTaskUnmarshal.UTC().String(), startTask.UTC().Round(0).String())
 	test.CheckEqual(endTaskUnmarshal.UTC().String(), endTask.UTC().Round(0).String())
+}
+
+func TestTaskList(t *testing.T) {
+	test.SetT(t)
+
+	task := NewTask(nil)
+	task.Title = "Task 1"
+	task.Description = "This is task description"
+	task.Priority = 4
+
+	task2 := NewTask(nil)
+	task2.Title = "Task 2"
+	task2.Description = "This is task 2 description"
+	task2.Priority = 1
+
+	task3 := NewTask(nil)
+	task3.Title = "Task 3"
+	task3.Description = "This is task 3 description"
+	task3.Priority = 2
+
+	listTask := NewListTask()
+	test.CheckNotEqual(listTask, nil)
+
+	listTask.Append(task)
+	listTask.Append(task2)
+	listTask.Append(task3)
+	test.CheckEqual(len(listTask.List), 3)
+
+	listTask.Remove(task2)
+	test.CheckEqual(len(listTask.List), 2)
+	test.CheckEqual(listTask.List[0], task)
+	test.CheckEqual(listTask.List[1], task3)
+
+	listTask.Remove(task)
+	listTask.Remove(task3)
+	test.CheckEqual(len(listTask.List), 0)
 }

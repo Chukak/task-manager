@@ -36,7 +36,7 @@ export DB_HOST=${TEST_PGHOST}
 export DB_PORT=${TEST_PGPORT}
 export DB_NAME=${TEST_DATABASE}
 export DB_USER=${TEST_PGUSER}
-export DB_PASSWORD=${PGPASSWORD}
+export DB_PASSWORD=${TEST_PGPASSWORD}
 
 react-prepare: | react-clean
 	@echo Preparing react directories...

@@ -22,7 +22,7 @@ export default class Task extends React.Component {
 
 	render() {
 		return <div>
-			<Box mt={0.3} border={1} borderColor="primary.main" borderRadius={6}>
+			<Box mb={1.5} mt={0.3} border={1} borderColor="primary.main" borderRadius={6}>
 			<ListItem button key={this.props.ikey} onClick={this.collapseHandler}>
 				<ListItemAvatar>
 					<Assignment />

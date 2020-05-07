@@ -11,7 +11,6 @@ import (
 type TaskManage interface {
 	AddSubtask(*Task)
 	RemoveSubtask(*Task)
-	Subtasks() []*Task
 	CountSubtasks() int
 	Open(bool)
 	SetActive(bool)
@@ -25,14 +24,14 @@ type TaskDuration struct {
 	Days    int `json:"days"`
 }
 
-// Task store targets, time, duration and all dependencies of this target
+// Task stores targets, time, duration and all dependencies of this target
 type Task struct {
 	parent      *Task
 	ticker      timers.CountdownTimer
 	Start       time.Time    `json:"start"`
 	End         time.Time    `json:"end"`
 	Duration    TaskDuration `json:"duration"`
-	subtasks    []*Task
+	Subtasks    []*Task      `json:"subtasks"`
 	running     int32
 	IsActive    bool   `json:"active"`
 	IsOpened    bool   `json:"opened"`
@@ -41,11 +40,22 @@ type Task struct {
 	Priority    int8   `json:"priority"`
 }
 
+// ListTaskManage is a common interface for task lists
+type ListTaskManage interface {
+	Append(*Task)
+	Remove(*Task)
+}
+
+// ListTask stores all tasks
+type ListTask struct {
+	List []*Task `json:"listTasks"`
+}
+
 // NewTask returns a new Task object
 func NewTask(par *Task) *Task {
 	task := Task{
 		parent: par, Start: time.Time{}, End: time.Time{}, ticker: timers.NewCountdownTimer(),
-		running: 0, subtasks: []*Task{},
+		running: 0, Subtasks: []*Task{},
 		Duration: TaskDuration{Seconds: 0, Minutes: 0, Hours: 0, Days: 0},
 		IsActive: false, IsOpened: false, Title: "", Description: "", Priority: -1}
 	if par != nil {
@@ -57,35 +67,28 @@ func NewTask(par *Task) *Task {
 // AddSubtask adds a subtask to this Task. This task become a parent of added subtask
 func (t *Task) AddSubtask(newSubtask *Task) {
 	newSubtask.parent = t
-	t.subtasks = append(t.subtasks, newSubtask)
+	t.Subtasks = append(t.Subtasks, newSubtask)
 }
 
 // RemoveSubtask removes a subtask from this Task,
 // also removes all the subtasks from this subtask
 func (t *Task) RemoveSubtask(oldSubtask *Task) {
-	oldSubtask.subtasks = nil
+	oldSubtask.Subtasks = nil
 	oldSubtask.parent = nil
 	index := -1
-	for i, e := range t.subtasks {
+	for i, e := range t.Subtasks {
 		if e == oldSubtask {
 			index = i
 		}
 	}
 	if index > -1 {
-		t.subtasks = append(t.subtasks[:index], t.subtasks[index+1:]...)
+		t.Subtasks = append(t.Subtasks[:index], t.Subtasks[index+1:]...)
 	}
-}
-
-// Subtasks return all the subtasks of this task
-func (t *Task) Subtasks() []*Task {
-	copied := make([]*Task, len(t.subtasks))
-	copy(copied, t.subtasks)
-	return copied
 }
 
 // CountSubtasks count number of subtasks
 func (t *Task) CountSubtasks() int {
-	return len(t.subtasks)
+	return len(t.Subtasks)
 }
 
 // Open this task
@@ -124,5 +127,28 @@ func (t *Task) SetActive(active bool) {
 			t.ticker.Finish()
 			t.End = time.Now()
 		}
+	}
+}
+
+// NewListTask returns a new ListTask object
+func NewListTask() *ListTask {
+	return &ListTask{}
+}
+
+// Append a new Task to list
+func (l *ListTask) Append(t *Task) {
+	l.List = append(l.List, t)
+}
+
+// Remove a task from list
+func (l *ListTask) Remove(t *Task) {
+	index := -1
+	for i, e := range l.List {
+		if e == t {
+			index = i
+		}
+	}
+	if index > -1 {
+		l.List = append(l.List[:index], l.List[index+1:]...)
 	}
 }
