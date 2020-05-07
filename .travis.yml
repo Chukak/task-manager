@@ -7,11 +7,17 @@ os:
   - linux
   # - osx
 
+sudo: required
+
 addons:
   apt:
     packages:
       - npm
       - nodejs
+      - postgresql
+
+services:
+  - postgresql
 
 install:
   - npm install -g create-react-app
@@ -19,5 +25,8 @@ install:
   - make init-modules
 
 script:
+  - # for this project
+  - export TEST_PGHOST=localhost TEST_PGPORT=5432 
+  - export TEST_DATABASE=task_manager_db TEST_PGUSER=task_manager_user TEST_PGPASSWORD=task_manager_password 
   - make build
   - make test-all
