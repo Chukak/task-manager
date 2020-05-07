@@ -19,15 +19,24 @@ UTILITY_MODULE_PATH=github.com/chukak/task-manager/pkg/utility
 # other
 GIN_MODULE_URL=github.com/gin-gonic/gin
 GIN_STATIC_MODULE_URL=github.com/gin-contrib/static
+PGX_MODULE_URL=github.com/jackc/pgx
 
 GO_DEP_DIRECTORY=vendor/src/*
 GO_DEPENDENCIES=$(TIMERS_MODULE_PATH) $(TEST_MODULE_PATH) $(UTILITY_MODULE_PATH) \
-	$(GIN_STATIC_MODULE_URL) $(GIN_MODULE_URL)
+	$(GIN_STATIC_MODULE_URL) $(GIN_MODULE_URL) $(PGX_MODULE_URL)
 
 REACT_BIN_DIRECTORY=$(shell pwd)/bin/web/
 REACT_LOG=$(REACT_BIN_DIRECTORY)/react.log
 
+SQL_FILES_DIRECTORY=$(shell pwd)/db
+
 export CURRENT_SOURCE_PATH=$(shell pwd)/
+# exported variables
+export DB_HOST=${PGHOST}
+export DB_PORT=${PGPORT}
+export DB_NAME=${DATABASE}
+export DB_USER=${PGUSER}
+export DB_PASSWORD=${PGPASSWORD}
 
 react-prepare: | react-clean
 	@echo Preparing react directories...
@@ -64,7 +73,7 @@ build: | react-build
 	@echo Building golang modules...
 	GOPATH=$(GOPATH) GOBIN=$(GOBIN) go build -v $(LDFLAGS) -o $(GOBIN)/$(PROJECT_NAME) $(GOFILES)
 
-test-src:
+test-src: | remove-test-db prepare-test-db
 	@echo Running tests...
 	cd $(GO_SOURCE_DIR); \
 	GOPATH=$(GOPATH) GOBIN=$(GOBIN) go test -v ./...
@@ -89,7 +98,16 @@ update-modules: | remove-modules init-modules
 run: | build react-run
 	cd $(GOBIN) && ./$(PROJECT_NAME) \
 
-clean: | react-clean
+prepare-test-db: 
+	@echo Preparing test database...
+	sudo -H -u postgres psql < $(SQL_FILES_DIRECTORY)/roles.sql
+	PGPASSWORD=$(DB_PASSWORD) psql -U $(DB_USER) -d $(DB_NAME) < $(SQL_FILES_DIRECTORY)/schema.sql
+
+remove-test-db: 
+	@echo Removing test database...
+	sudo -H -u postgres psql < $(SQL_FILES_DIRECTORY)/clear.sql
+
+clean: | react-clean remove-test-db
 	@echo Clean bin/$(PROJECT_NAME)
 	GOPATH=$(GOPATH) GOBIN=$(GOBIN) go clean; \
 	rm -f bin/$(PROJECT_NAME) \

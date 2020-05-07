@@ -7,7 +7,7 @@ import (
 	"github.com/chukak/task-manager/pkg/timers"
 )
 
-// TaskManage is common interface for tasks
+// TaskManage is a common interface for tasks
 type TaskManage interface {
 	AddSubtask(*Task)
 	RemoveSubtask(*Task)
