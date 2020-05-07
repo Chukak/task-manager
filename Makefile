@@ -32,10 +32,10 @@ SQL_FILES_DIRECTORY=$(shell pwd)/db
 
 export CURRENT_SOURCE_PATH=$(shell pwd)/
 # exported variables
-export DB_HOST=${PGHOST}
-export DB_PORT=${PGPORT}
-export DB_NAME=${DATABASE}
-export DB_USER=${PGUSER}
+export DB_HOST=${TEST_PGHOST}
+export DB_PORT=${TEST_PGPORT}
+export DB_NAME=${TEST_DATABASE}
+export DB_USER=${TEST_PGUSER}
 export DB_PASSWORD=${PGPASSWORD}
 
 react-prepare: | react-clean

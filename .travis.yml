@@ -26,7 +26,7 @@ install:
 
 script:
   - # for this project
-  - export PGHOST=localhost PGPORT=5432 
-  - export DATABASE=task_manager_db PGUSER=task_manager_user PGPASSWORD=task_manager_password 
+  - export TEST_PGHOST=localhost TEST_PGPORT=5432 
+  - export TEST_DATABASE=task_manager_db TEST_PGUSER=task_manager_user TEST_PGPASSWORD=task_manager_password 
   - make build
   - make test-all
