@@ -1,11 +1,12 @@
 import React from 'react';
 import SwipeableViews from 'react-swipeable-views';
-import { AppBar, Tabs, Tab, Box, Typography, 
-	TextField } from '@material-ui/core'
+import { AppBar, Toolbar, Tabs, Tab, Box, Typography, 
+	TextField, Grid } from '@material-ui/core'
 import PriorityButton from './PriorityButton'
 import DateTimeField from './DateTimeField'
 import ActivityButton from './ActivityButton'
 import ListTasks from './ListTasks' 
+import TaskMenu from './TaskMenu'
 
 class TabPanelDescription extends React.Component {
 	render() {
@@ -129,17 +130,27 @@ export default class TaskInfoComponent extends React.Component {
 	render() {
 		return <div>
 			<AppBar position="static" color="default">
-				<Tabs
-					value={this.state.index}
-					onChange={this.changeTabHandler}
-					indicatorColor="primary"
-					textColor="primary"
-					variant="fullWidth"
-					aria-label="full width tabs example">
-					<Tab label="Description" id="full-width-tab-0" aria-controls="full-width-tabpanel-0" />
-					<Tab label="Information" id="full-width-tab-1" aria-controls="full-width-tabpanel-1" />
-					<Tab label="Subtasks" id="full-width-tab-2" aria-controls="full-width-tabpanel-2" />
-				</Tabs>
+				<Toolbar>
+					<Grid justify={"space-between"} container>
+						<Grid xs={10}>
+							<Tabs
+								value={this.state.index}
+								onChange={this.changeTabHandler}
+								indicatorColor="primary"
+								textColor="primary"
+								variant="standard"
+								aria-label="full width tabs example">
+								<Tab label="Description" id="full-width-tab-0" aria-controls="full-width-tabpanel-0" />
+								<Tab label="Information" id="full-width-tab-1" aria-controls="full-width-tabpanel-1" />
+								<Tab label="Subtasks" id="full-width-tab-2" aria-controls="full-width-tabpanel-2" />
+							</Tabs>
+						</Grid>
+						<Grid xs={1} />
+						<Grid xs={1}>
+							<TaskMenu />
+						</Grid>
+					</Grid>
+				</Toolbar>
 			</AppBar>
 			<SwipeableViews
 				axis='x'
