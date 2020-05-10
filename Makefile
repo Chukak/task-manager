@@ -20,10 +20,11 @@ UTILITY_MODULE_PATH=github.com/chukak/task-manager/pkg/utility
 GIN_MODULE_URL=github.com/gin-gonic/gin
 GIN_STATIC_MODULE_URL=github.com/gin-contrib/static
 PGX_MODULE_URL=github.com/jackc/pgx
+PGXPUDDLE_MODULE_URL=github.com/jackc/puddle
 
 GO_DEP_DIRECTORY=vendor/src/*
 GO_DEPENDENCIES=$(TIMERS_MODULE_PATH) $(TEST_MODULE_PATH) $(UTILITY_MODULE_PATH) \
-	$(GIN_STATIC_MODULE_URL) $(GIN_MODULE_URL) $(PGX_MODULE_URL)
+	$(GIN_STATIC_MODULE_URL) $(GIN_MODULE_URL) $(PGX_MODULE_URL) $(PGXPUDDLE_MODULE_URL) 
 
 REACT_BIN_DIRECTORY=$(shell pwd)/bin/web/
 REACT_LOG=$(REACT_BIN_DIRECTORY)/react.log
