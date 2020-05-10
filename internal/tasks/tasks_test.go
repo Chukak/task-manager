@@ -217,6 +217,10 @@ func TestTaskFunctionalityUsingDatabase(t *testing.T) {
 
 	SetDatabase(d)
 	task := NewTask(nil)
+	test.CheckEqual(len(listTaskPointer.List), 1)
+	test.CheckEqual(len(taskPointers), 1)
+	test.CheckEqual(listTaskPointer.List[0], task)
+	test.CheckEqual(taskPointers[task.TaskID], task)
 
 	rows, err := d.Exec(`SELECT 
 		parent_id, start_time, end_time, duration_id, is_open, is_active, title, descr, priority 
@@ -306,6 +310,28 @@ func TestTaskFunctionalityUsingDatabase(t *testing.T) {
 		// string, because checks package have not == operator for time.Time
 		test.CheckEqual(endTime.String(), task.End.Truncate(time.Second).String())
 	}
+
+	task.Title = "Title"
+	task.Description = "Description"
+	task.Priority = 1
+	task.UpdateInDb()
+	time.Sleep(800 * time.Millisecond)
+	rows, err = d.Exec(`SELECT title, descr, priority FROM tasks WHERE id = $1;`, task.TaskID)
+	test.CheckEqual(err, nil)
+	test.CheckTrue(rows.Next())
+	{
+		var title, description string
+		var priority int8
+		test.CheckEqual(rows.Scan(&title, &description, &priority), nil)
+		test.CheckEqual(title, task.Title)
+		test.CheckEqual(description, task.Description)
+		test.CheckEqual(priority, task.Priority)
+	}
+
+	task.RemoveSelf()
+	rows, err = d.Exec(`SELECT id FROM tasks WHERE id = $1;`, task.TaskID)
+	test.CheckEqual(err, nil)
+	test.CheckFalse(rows.Next())
 }
 
 func TestTaskSubtasksUsingDatabase(t *testing.T) {

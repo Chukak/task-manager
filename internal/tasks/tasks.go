@@ -16,6 +16,8 @@ type TaskManage interface {
 	CountSubtasks() int
 	Open(bool)
 	SetActive(bool)
+	RemoveSelf()
+	UpdateInDb()
 }
 
 // TaskDuration store a duration of task
@@ -55,6 +57,8 @@ type ListTask struct {
 }
 
 var databasePointer *db.Database = nil
+var listTaskPointer *ListTask = nil
+var taskPointers = map[int64]*Task{}
 
 // SetDatabase sets the database pointer
 func SetDatabase(d *db.Database) {
@@ -93,6 +97,8 @@ func NewTask(par *Task) *Task {
 				var taskID int64 = -1
 				result.Scan(&taskID, &task.Start, &task.End)
 				task.TaskID = taskID
+				taskPointers[taskID] = &task
+				listTaskPointer.Append(&task)
 			}
 		}
 	}
@@ -119,13 +125,14 @@ func (t *Task) RemoveSubtask(oldSubtask *Task) {
 	for i, e := range t.Subtasks {
 		if e == oldSubtask {
 			index = i
+
 		}
 	}
 	if index > -1 {
 		t.Subtasks = append(t.Subtasks[:index], t.Subtasks[index+1:]...)
 	}
 
-	_, _ = execSQL("DELETE FROM tasks WHERE id = $1;", t.TaskID)
+	_, _ = execSQL("DELETE FROM tasks WHERE id = $1;", oldSubtask.TaskID)
 }
 
 // CountSubtasks count number of subtasks
@@ -182,9 +189,23 @@ func (t *Task) SetActive(active bool) {
 	}
 }
 
+// RemoveSelf removes this task
+func (t *Task) RemoveSelf() {
+	t.Subtasks = nil
+	t.parent = nil
+
+	_, _ = execSQL("DELETE FROM tasks WHERE id = $1;", t.TaskID)
+}
+
+func (t *Task) UpdateInDb() {
+	_, _ = execSQL(`UPDATE tasks SET title = $1, descr = $2, priority = $3 WHERE id = $4`,
+		t.Title, t.Description, t.Priority, t.TaskID)
+}
+
 // NewListTask returns a new ListTask object
 func NewListTask() *ListTask {
-	return &ListTask{}
+	listTaskPointer = &ListTask{}
+	return listTaskPointer
 }
 
 // Append a new Task to list
