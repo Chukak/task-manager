@@ -3,9 +3,12 @@ package tasks
 import (
 	"encoding/json"
 	"math"
+	"os"
+	"strconv"
 	"testing"
 	"time"
 
+	db "../database"
 	test "github.com/chukak/task-manager/pkg/checks"
 )
 
@@ -15,7 +18,7 @@ func TestTaskInitialization(t *testing.T) {
 	task := NewTask(nil)
 
 	test.CheckEqual(task.Description, "")
-	test.CheckEqual(task.Priority, -1)
+	test.CheckEqual(task.Priority, 0)
 	test.CheckEqual(task.Title, "")
 	test.CheckEqual(task.parent, (*Task)(nil))
 	test.CheckEqual(task.running, 0)
@@ -196,4 +199,155 @@ func TestTaskList(t *testing.T) {
 	listTask.Remove(task)
 	listTask.Remove(task3)
 	test.CheckEqual(len(listTask.List), 0)
+}
+
+func TestTaskFunctionalityUsingDatabase(t *testing.T) {
+	test.SetT(t)
+
+	host := os.Getenv("DB_HOST")
+	val, _ := strconv.Atoi(os.Getenv("DB_PORT"))
+	port := uint16(val)
+	database := os.Getenv("DB_NAME")
+	user := os.Getenv("DB_USER")
+	password := os.Getenv("DB_PASSWORD")
+
+	d, _ := db.NewDatabase(host, uint16(port), database, user, password)
+	ok, err := d.Open()
+	test.CheckTrue(ok)
+
+	SetDatabase(d)
+	task := NewTask(nil)
+
+	rows, err := d.Exec(`SELECT 
+		parent_id, start_time, end_time, duration_id, is_open, is_active, title, descr, priority 
+		FROM tasks WHERE id = $1;`, task.TaskID)
+	test.CheckEqual(err, nil)
+	test.CheckTrue(rows.Next())
+	{
+		var parentID int64
+		var startTime time.Time
+		var endTime time.Time
+		var durationID int64
+		var isOpen bool
+		var isActive bool
+		var title string
+		var descr string
+		var priority int
+
+		test.CheckEqual(rows.Scan(&parentID, &startTime, &endTime, &durationID, &isOpen,
+			&isActive, &title, &descr, &priority), nil)
+
+		test.CheckEqual(parentID, -1)
+		// string, because checks package have not == operator for time.Time
+		test.CheckEqual(startTime.String(), task.Start.String())
+		test.CheckEqual(endTime.String(), task.End.String())
+		test.CheckNotEqual(durationID, -1)
+		test.CheckEqual(isOpen, task.IsOpened)
+		test.CheckEqual(isActive, task.IsActive)
+		test.CheckEqual(title, task.Title)
+		test.CheckEqual(descr, task.Description)
+		test.CheckEqual(priority, task.Priority)
+	}
+
+	task.Open(true)
+	time.Sleep(800 * time.Millisecond)
+	rows, err = d.Exec(`SELECT is_open FROM tasks WHERE id = $1;`, task.TaskID)
+	test.CheckEqual(err, nil)
+	test.CheckTrue(rows.Next())
+	{
+		var isOpen bool
+		test.CheckEqual(rows.Scan(&isOpen), nil)
+		test.CheckTrue(isOpen)
+	}
+
+	task.SetActive(true)
+	time.Sleep(4 * time.Second)
+
+	rows, err = d.Exec(`SELECT is_active, duration_id, start_time FROM tasks WHERE id = $1;`, task.TaskID)
+	test.CheckEqual(err, nil)
+	test.CheckTrue(rows.Next())
+	{
+		var isActive bool
+		var durationID int64 = -1
+		var startTime time.Time
+		test.CheckEqual(rows.Scan(&isActive, &durationID, &startTime), nil)
+		test.CheckTrue(isActive)
+		test.CheckNotEqual(durationID, -1)
+		// string, because checks package have not == operator for time.Time
+		test.CheckEqual(startTime.String(), task.Start.String())
+
+		rows, err = d.Exec(`SELECT second, minute, hour, day FROM task_duration WHERE id = $1;`,
+			durationID)
+		test.CheckEqual(err, nil)
+		test.CheckTrue(rows.Next())
+		{
+			var second, minute, hour, day int
+			test.CheckEqual(rows.Scan(&second, &minute, &hour, &day), nil)
+
+			test.CheckNotEqual(second, 0)
+			test.CheckEqual(minute, task.Duration.Minutes)
+			test.CheckEqual(hour, task.Duration.Hours)
+			test.CheckEqual(day, task.Duration.Days)
+		}
+	}
+
+	task.Open(false)
+	time.Sleep(800 * time.Millisecond)
+	rows, err = d.Exec(`SELECT is_active, is_open, end_time FROM tasks WHERE id = $1;`, task.TaskID)
+	test.CheckEqual(err, nil)
+	test.CheckTrue(rows.Next())
+	{
+		var isActive bool
+		var isOpen bool
+		var endTime time.Time
+		test.CheckEqual(rows.Scan(&isActive, &isOpen, &endTime), nil)
+		test.CheckFalse(isActive)
+		test.CheckFalse(isOpen)
+		// string, because checks package have not == operator for time.Time
+		test.CheckEqual(endTime.String(), task.End.Truncate(time.Second).String())
+	}
+}
+
+func TestTaskSubtasksUsingDatabase(t *testing.T) {
+	test.SetT(t)
+
+	host := os.Getenv("DB_HOST")
+	val, _ := strconv.Atoi(os.Getenv("DB_PORT"))
+	port := uint16(val)
+	database := os.Getenv("DB_NAME")
+	user := os.Getenv("DB_USER")
+	password := os.Getenv("DB_PASSWORD")
+
+	d, _ := db.NewDatabase(host, uint16(port), database, user, password)
+	ok, err := d.Open()
+	test.CheckTrue(ok)
+
+	SetDatabase(d)
+	task := NewTask(nil)
+
+	subtask1 := NewTask(task)
+	subtask2 := NewTask(task)
+	subtask3 := NewTask(task)
+
+	rows, err := d.Exec(`SELECT id FROM tasks WHERE parent_id = $1;`, task.TaskID)
+	test.CheckEqual(err, nil)
+	test.CheckTrue(rows.Next())
+	{
+		var taskID int64
+		test.CheckEqual(rows.Scan(&taskID), nil)
+		test.CheckEqual(taskID, subtask1.TaskID)
+	}
+	test.CheckTrue(rows.Next())
+	{
+		var taskID int64
+		test.CheckEqual(rows.Scan(&taskID), nil)
+		test.CheckEqual(taskID, subtask2.TaskID)
+	}
+	test.CheckTrue(rows.Next())
+	{
+		var taskID int64
+		test.CheckEqual(rows.Scan(&taskID), nil)
+		test.CheckEqual(taskID, subtask3.TaskID)
+	}
+	test.CheckFalse(rows.Next())
 }

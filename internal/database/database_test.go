@@ -23,11 +23,11 @@ func TestDatabaseInitialization(t *testing.T) {
 
 	db, err := NewDatabase(host, port, database, user, password)
 	test.CheckEqual(err, nil)
-	test.CheckEqual(db.config.Host, host)
-	test.CheckEqual(db.config.Port, port)
-	test.CheckEqual(db.config.Database, database)
-	test.CheckEqual(db.config.User, user)
-	test.CheckEqual(db.config.Password, password)
+	test.CheckEqual(db.config.ConnConfig.Host, host)
+	test.CheckEqual(db.config.ConnConfig.Port, port)
+	test.CheckEqual(db.config.ConnConfig.Database, database)
+	test.CheckEqual(db.config.ConnConfig.User, user)
+	test.CheckEqual(db.config.ConnConfig.Password, password)
 }
 
 func TestDatabaseFunctionality(t *testing.T) {
