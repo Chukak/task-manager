@@ -42,7 +42,7 @@ type Task struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	Priority    int8   `json:"priority"`
-	TaskID      int64  `json:"id"`
+	TaskID      int64  `json:"taskID"`
 }
 
 // ListTaskManage is a common interface for task lists
@@ -86,6 +86,10 @@ func NewTask(par *Task) *Task {
 		Duration: TaskDuration{Seconds: 0, Minutes: 0, Hours: 0, Days: 0},
 		IsActive: false, IsOpened: false, Title: "", Description: "", Priority: 0, TaskID: -1}
 
+	if listTaskPointer != nil && par == nil {
+		listTaskPointer.Append(&task)
+	}
+
 	if databasePointer != nil {
 		result, err := execSQL("INSERT INTO task_duration DEFAULT VALUES RETURNING id;")
 		if err == nil && result.Next() {
@@ -98,7 +102,6 @@ func NewTask(par *Task) *Task {
 				result.Scan(&taskID, &task.Start, &task.End)
 				task.TaskID = taskID
 				taskPointers[taskID] = &task
-				listTaskPointer.Append(&task)
 			}
 		}
 	}
@@ -163,7 +166,7 @@ func (t *Task) SetActive(active bool) {
 			atomic.StoreInt32(&t.running, 1)
 			t.Start = time.Now().Truncate(time.Second)
 			_, _ = execSQL("UPDATE tasks SET start_time = $1 WHERE id = $2;", t.Start, t.TaskID)
-			t.ticker.Run()
+			t.ticker = timers.NewCountdownTimer()
 
 			go func() {
 				for atomic.LoadInt32(&t.running) > 0 {
