@@ -74,7 +74,7 @@ build: | react-build
 	@echo Building golang modules...
 	GOPATH=$(GOPATH) GOBIN=$(GOBIN) go build -v $(LDFLAGS) -o $(GOBIN)/$(PROJECT_NAME) $(GOFILES)
 
-test-src: | remove-test-db prepare-test-db
+test-src: | remove-db prepare-db
 	@echo Running tests...
 	cd $(GO_SOURCE_DIR); \
 	GOPATH=$(GOPATH) GOBIN=$(GOBIN) go test -v ./...
@@ -99,12 +99,12 @@ update-modules: | remove-modules init-modules
 run: | build react-run
 	cd $(GOBIN) && ./$(PROJECT_NAME) \
 
-prepare-test-db: 
+prepare-db: 
 	@echo Preparing test database...
 	sudo -H -u postgres psql < $(SQL_FILES_DIRECTORY)/roles.sql
 	PGPASSWORD=$(DB_PASSWORD) psql -U $(DB_USER) -d $(DB_NAME) < $(SQL_FILES_DIRECTORY)/schema.sql
 
-remove-test-db: 
+remove-db: 
 	@echo Removing test database...
 	sudo -H -u postgres psql < $(SQL_FILES_DIRECTORY)/clear.sql
 
