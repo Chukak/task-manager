@@ -11,6 +11,7 @@ export default class PriorityButton extends React.Component {
 
 		this.increment = this.increment.bind(this);
 		this.decrement = this.decrement.bind(this);
+		this.getCounter = this.props.counterHandler
 	}
 
 	increment() {
@@ -19,6 +20,7 @@ export default class PriorityButton extends React.Component {
 			this.setState(state => ({
 				counter: state.counter + 1
 			}));
+			this.getCounter(this.state.counter)
 		}
 	}
 
@@ -28,6 +30,7 @@ export default class PriorityButton extends React.Component {
 			this.setState(state => ({
 				counter: state.counter - 1
 			}));
+			this.getCounter(this.state.counter)
 		}
 	}
 

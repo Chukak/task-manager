@@ -5,12 +5,22 @@ import MenuBar from './components/MenuBar'
 import { Container } from '@material-ui/core'
 
 class Main extends React.Component {
+	constructor(props) {
+		super(props)
+
+		this.state = {
+			listTaskRef: React.createRef()
+		}
+	}
+
 	render() {
+		var listTasks = <ListTasks ref={this.state.listTaskRef} />
+
 		return (
 			<div>
-				<MenuBar />
-				<Container fixed>
-					<ListTasks />
+				<MenuBar listTask={this.state.listTaskRef} />
+				<Container  fixed>
+					{listTasks}
 				</Container>
 			</div>)
 	}

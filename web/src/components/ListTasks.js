@@ -1,6 +1,7 @@
 import React from "react";
 import Task from "./Task";
 import { List } from '@material-ui/core'
+import { GetAllTasks } from './Request'
 
 const axios = require('axios');
 
@@ -12,19 +13,23 @@ export default class ListTasks extends React.Component {
 		};
 	}
 
+	update() {
+		GetAllTasks()
+			.then(function(response) {
+				var l = response.data.listTasks
+				this.setState({
+					listTasks: l === null ? [] : l
+				});
+			}.bind(this))
+	}
+
 	componentDidMount() {
 		if (this.props.hasSubtasks) {
 			this.setState({
 				listTasks: this.props.listTasks
 			});
 		} else {
-			axios.get('/api/task/all')
-				.then(function(response) {
-					console.log(response);
-					this.setState({
-						listTasks: response.data.listTasks
-					});
-				}.bind(this));
+			this.update()
 		}
 	}
 
@@ -36,8 +41,5 @@ export default class ListTasks extends React.Component {
 				})}
 			</List>
 		</div>
-	}
-
-	componentWillUnmount() {
 	}
 }

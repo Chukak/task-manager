@@ -14,6 +14,15 @@ export default class ActivityButton extends React.Component {
 	}
 
 	changeActive() {
+		var data = {}
+		data[this.props.nameChangedProperty] = !this.state.active
+		data["id"] = this.props.TaskID
+
+		this.props.onChangeValueHandler(data)
+			.then(function(response) {
+			this.props.onClickHandler()
+		}.bind(this))
+
 		this.setState(state => ({
 			active: !state.active,
 			color: !state.active ? "primary" : "secondary"
