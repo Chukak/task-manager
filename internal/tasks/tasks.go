@@ -66,14 +66,16 @@ func SetDatabase(d *db.Database) {
 }
 
 // execSql exes SQL query
-func execSQL(q string, args ...interface{}) (db.QueryResult, error) {
+func execSQL(t db.QueryExecType, q string, args ...interface{}) (db.QueryResult, error) {
 	var rows db.QueryResult
 	var err error
 	if databasePointer != nil {
-		rows, err = databasePointer.Exec(q, args...)
+		conn, err := databasePointer.GetConnection()
+		rows, err = databasePointer.Exec(t, conn, q, args...)
 		if err != nil {
 			log.Println("SQL error: ", err.Error())
 		}
+		databasePointer.CloseConnection(conn)
 	}
 	return rows, err
 }
@@ -91,12 +93,12 @@ func NewTask(par *Task) *Task {
 	}
 
 	if databasePointer != nil {
-		result, err := execSQL("INSERT INTO task_duration DEFAULT VALUES RETURNING id;")
+		result, err := execSQL(db.SELECT, "INSERT INTO task_duration DEFAULT VALUES RETURNING id;")
 		if err == nil && result.Next() {
 			var durationID int = -1
 			result.Scan(&durationID)
-			result, _ = execSQL(`INSERT INTO tasks (duration_id) VALUES ($1) 
-				RETURNING id, start_time, end_time`, durationID)
+			result, _ = execSQL(db.SELECT,
+				"INSERT INTO tasks (duration_id) VALUES ($1) RETURNING id, start_time, end_time", durationID)
 			if err == nil && result.Next() {
 				var taskID int64 = -1
 				result.Scan(&taskID, &task.Start, &task.End)
@@ -116,7 +118,8 @@ func NewTask(par *Task) *Task {
 func (t *Task) AddSubtask(newSubtask *Task) {
 	newSubtask.parent = t
 	t.Subtasks = append(t.Subtasks, newSubtask)
-	_, _ = execSQL("UPDATE tasks SET parent_id = $1 WHERE id = $2;", t.TaskID, newSubtask.TaskID)
+	execSQL(db.UPDATE,
+		"UPDATE tasks SET parent_id = $1 WHERE id = $2 RETURNING id;", t.TaskID, newSubtask.TaskID)
 }
 
 // RemoveSubtask removes a subtask from this Task,
@@ -135,7 +138,7 @@ func (t *Task) RemoveSubtask(oldSubtask *Task) {
 		t.Subtasks = append(t.Subtasks[:index], t.Subtasks[index+1:]...)
 	}
 
-	_, _ = execSQL("DELETE FROM tasks WHERE id = $1;", oldSubtask.TaskID)
+	execSQL(db.DELETE, "DELETE FROM tasks WHERE id = $1;", oldSubtask.TaskID)
 }
 
 // CountSubtasks count number of subtasks
@@ -149,15 +152,14 @@ func (t *Task) Open(o bool) {
 	if !o {
 		t.SetActive(false)
 	}
-	_, _ = execSQL("UPDATE tasks SET is_open = $1 WHERE id = $2;", o, t.TaskID)
+	execSQL(db.UPDATE, "UPDATE tasks SET is_open = $1 WHERE id = $2;", o, t.TaskID)
 }
 
 // SetActive set this task as active
 func (t *Task) SetActive(active bool) {
 	if active != t.IsActive {
 		t.IsActive = active
-
-		_, _ = execSQL("UPDATE tasks SET is_active = $1 WHERE id = $2;", active, t.TaskID)
+		execSQL(db.UPDATE, "UPDATE tasks SET is_active = $1 WHERE id = $2;", active, t.TaskID)
 
 		if active {
 			if !t.IsOpened {
@@ -165,8 +167,9 @@ func (t *Task) SetActive(active bool) {
 			}
 			atomic.StoreInt32(&t.running, 1)
 			t.Start = time.Now().Truncate(time.Second)
-			_, _ = execSQL("UPDATE tasks SET start_time = $1 WHERE id = $2;", t.Start, t.TaskID)
+			execSQL(db.UPDATE, "UPDATE tasks SET start_time = $1 WHERE id = $2;", t.Start, t.TaskID)
 			t.ticker = timers.NewCountdownTimer()
+			t.ticker.Run()
 
 			go func() {
 				for atomic.LoadInt32(&t.running) > 0 {
@@ -176,10 +179,10 @@ func (t *Task) SetActive(active bool) {
 						t.Duration.Minutes = t.ticker.Min
 						t.Duration.Hours = t.ticker.Hours
 						t.Duration.Days = t.ticker.Days
-						_, _ = execSQL(`UPDATE task_duration SET second = $1, minute = $2, hour = $3, day = $4 
-								WHERE id IN (SELECT duration_id FROM tasks WHERE id = $5);`,
+						execSQL(db.UPDATE,
+							`UPDATE task_duration SET second = $1, minute = $2, hour = $3, day = $4 
+							WHERE id IN (SELECT duration_id FROM tasks WHERE id = $5);`,
 							t.Duration.Seconds, t.Duration.Minutes, t.Duration.Hours, t.Duration.Days, t.TaskID)
-
 					}
 				}
 			}()
@@ -187,7 +190,7 @@ func (t *Task) SetActive(active bool) {
 			atomic.StoreInt32(&t.running, 0)
 			t.ticker.Finish()
 			t.End = time.Now().Truncate(time.Second)
-			_, _ = execSQL("UPDATE tasks SET end_time = $1 WHERE id = $2;", t.End, t.TaskID)
+			execSQL(db.UPDATE, "UPDATE tasks SET end_time = $1 WHERE id = $2;", t.End, t.TaskID)
 		}
 	}
 }
@@ -197,11 +200,12 @@ func (t *Task) RemoveSelf() {
 	t.Subtasks = nil
 	t.parent = nil
 
-	_, _ = execSQL("DELETE FROM tasks WHERE id = $1;", t.TaskID)
+	execSQL(db.DELETE, "DELETE FROM tasks WHERE id = $1 OR parent_id = $1;", t.TaskID)
 }
 
 func (t *Task) UpdateInDb() {
-	_, _ = execSQL(`UPDATE tasks SET title = $1, descr = $2, priority = $3 WHERE id = $4`,
+	execSQL(db.UPDATE,
+		"UPDATE tasks SET title = $1, descr = $2, priority = $3 WHERE id = $4;",
 		t.Title, t.Description, t.Priority, t.TaskID)
 }
 

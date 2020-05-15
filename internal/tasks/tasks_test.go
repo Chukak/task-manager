@@ -212,7 +212,7 @@ func TestTaskFunctionalityUsingDatabase(t *testing.T) {
 	password := os.Getenv("DB_PASSWORD")
 
 	d, _ := db.NewDatabase(host, uint16(port), database, user, password)
-	ok, err := d.Open()
+	ok, _ := d.Open()
 	test.CheckTrue(ok)
 
 	SetDatabase(d)
@@ -222,116 +222,158 @@ func TestTaskFunctionalityUsingDatabase(t *testing.T) {
 	test.CheckEqual(listTaskPointer.List[0], task)
 	test.CheckEqual(taskPointers[task.TaskID], task)
 
-	rows, err := d.Exec(`SELECT 
-		parent_id, start_time, end_time, duration_id, is_open, is_active, title, descr, priority 
-		FROM tasks WHERE id = $1;`, task.TaskID)
-	test.CheckEqual(err, nil)
-	test.CheckTrue(rows.Next())
 	{
-		var parentID int64
-		var startTime time.Time
-		var endTime time.Time
-		var durationID int64
-		var isOpen bool
-		var isActive bool
-		var title string
-		var descr string
-		var priority int
+		conn, err := d.GetConnection()
+		test.CheckEqual(err, nil)
+		rows, err := d.Exec(db.SELECT, conn,
+			`SELECT parent_id, start_time, end_time, duration_id, is_open, is_active, title, descr, priority
+			FROM tasks WHERE id = $1;`, task.TaskID)
+		test.CheckEqual(err, nil)
+		test.CheckTrue(rows.Next())
+		{
+			var parentID int64
+			var startTime time.Time
+			var endTime time.Time
+			var durationID int64
+			var isOpen bool
+			var isActive bool
+			var title string
+			var descr string
+			var priority int
 
-		test.CheckEqual(rows.Scan(&parentID, &startTime, &endTime, &durationID, &isOpen,
-			&isActive, &title, &descr, &priority), nil)
+			test.CheckEqual(rows.Scan(&parentID, &startTime, &endTime, &durationID, &isOpen,
+				&isActive, &title, &descr, &priority), nil)
 
-		test.CheckEqual(parentID, -1)
-		// string, because checks package have not == operator for time.Time
-		test.CheckEqual(startTime.String(), task.Start.String())
-		test.CheckEqual(endTime.String(), task.End.String())
-		test.CheckNotEqual(durationID, -1)
-		test.CheckEqual(isOpen, task.IsOpened)
-		test.CheckEqual(isActive, task.IsActive)
-		test.CheckEqual(title, task.Title)
-		test.CheckEqual(descr, task.Description)
-		test.CheckEqual(priority, task.Priority)
+			test.CheckEqual(parentID, -1)
+			// string, because checks package have not == operator for time.Time
+			test.CheckEqual(startTime.String(), task.Start.String())
+			test.CheckEqual(endTime.String(), task.End.String())
+			test.CheckNotEqual(durationID, -1)
+			test.CheckEqual(isOpen, task.IsOpened)
+			test.CheckEqual(isActive, task.IsActive)
+			test.CheckEqual(title, task.Title)
+			test.CheckEqual(descr, task.Description)
+			test.CheckEqual(priority, task.Priority)
+		}
+		rows.Close()
+		d.CloseConnection(conn)
 	}
 
 	task.Open(true)
-	time.Sleep(800 * time.Millisecond)
-	rows, err = d.Exec(`SELECT is_open FROM tasks WHERE id = $1;`, task.TaskID)
-	test.CheckEqual(err, nil)
-	test.CheckTrue(rows.Next())
+	time.Sleep(1 * time.Second)
 	{
-		var isOpen bool
-		test.CheckEqual(rows.Scan(&isOpen), nil)
-		test.CheckTrue(isOpen)
+		conn, err := d.GetConnection()
+		test.CheckEqual(err, nil)
+		rows, err := d.Exec(db.SELECT, conn, "SELECT is_open FROM tasks WHERE id = $1;", task.TaskID)
+		test.CheckEqual(err, nil)
+		test.CheckTrue(rows.Next())
+		{
+			var isOpen bool
+			test.CheckEqual(rows.Scan(&isOpen), nil)
+			test.CheckTrue(isOpen)
+		}
+		rows.Close()
+		d.CloseConnection(conn)
 	}
 
 	task.SetActive(true)
 	time.Sleep(4 * time.Second)
 
-	rows, err = d.Exec(`SELECT is_active, duration_id, start_time FROM tasks WHERE id = $1;`, task.TaskID)
-	test.CheckEqual(err, nil)
-	test.CheckTrue(rows.Next())
 	{
-		var isActive bool
-		var durationID int64 = -1
-		var startTime time.Time
-		test.CheckEqual(rows.Scan(&isActive, &durationID, &startTime), nil)
-		test.CheckTrue(isActive)
-		test.CheckNotEqual(durationID, -1)
-		// string, because checks package have not == operator for time.Time
-		test.CheckEqual(startTime.String(), task.Start.String())
-
-		rows, err = d.Exec(`SELECT second, minute, hour, day FROM task_duration WHERE id = $1;`,
-			durationID)
+		conn, err := d.GetConnection()
+		test.CheckEqual(err, nil)
+		rows, err := d.Exec(db.SELECT, conn,
+			"SELECT is_active, duration_id, start_time FROM tasks WHERE id = $1;", task.TaskID)
 		test.CheckEqual(err, nil)
 		test.CheckTrue(rows.Next())
 		{
-			var second, minute, hour, day int
-			test.CheckEqual(rows.Scan(&second, &minute, &hour, &day), nil)
+			var isActive bool
+			var durationID int64 = -1
+			var startTime time.Time
+			test.CheckEqual(rows.Scan(&isActive, &durationID, &startTime), nil)
+			test.CheckTrue(isActive)
+			test.CheckNotEqual(durationID, -1)
+			// string, because checks package have not == operator for time.Time
+			test.CheckEqual(startTime.String(), task.Start.String())
+			rows.Close()
+			d.CloseConnection(conn)
 
-			test.CheckNotEqual(second, 0)
-			test.CheckEqual(minute, task.Duration.Minutes)
-			test.CheckEqual(hour, task.Duration.Hours)
-			test.CheckEqual(day, task.Duration.Days)
+			conn, err := d.GetConnection()
+			rows, err = d.Exec(db.SELECT, conn,
+				"SELECT second, minute, hour, day FROM task_duration WHERE id = $1;",
+				durationID)
+			test.CheckEqual(err, nil)
+			test.CheckTrue(rows.Next())
+			{
+				var second, minute, hour, day int
+				test.CheckEqual(rows.Scan(&second, &minute, &hour, &day), nil)
+
+				test.CheckNotEqual(second, 0)
+				test.CheckEqual(minute, task.Duration.Minutes)
+				test.CheckEqual(hour, task.Duration.Hours)
+				test.CheckEqual(day, task.Duration.Days)
+			}
+			rows.Close()
+			d.CloseConnection(conn)
 		}
 	}
 
 	task.Open(false)
-	time.Sleep(800 * time.Millisecond)
-	rows, err = d.Exec(`SELECT is_active, is_open, end_time FROM tasks WHERE id = $1;`, task.TaskID)
-	test.CheckEqual(err, nil)
-	test.CheckTrue(rows.Next())
+	time.Sleep(1 * time.Second)
 	{
-		var isActive bool
-		var isOpen bool
-		var endTime time.Time
-		test.CheckEqual(rows.Scan(&isActive, &isOpen, &endTime), nil)
-		test.CheckFalse(isActive)
-		test.CheckFalse(isOpen)
-		// string, because checks package have not == operator for time.Time
-		test.CheckEqual(endTime.String(), task.End.Truncate(time.Second).String())
+		conn, err := d.GetConnection()
+		test.CheckEqual(err, nil)
+		rows, err := d.Exec(db.SELECT, conn,
+			"SELECT is_active, is_open, end_time FROM tasks WHERE id = $1;", task.TaskID)
+		test.CheckEqual(err, nil)
+		test.CheckTrue(rows.Next())
+		{
+			var isActive bool
+			var isOpen bool
+			var endTime time.Time
+			test.CheckEqual(rows.Scan(&isActive, &isOpen, &endTime), nil)
+			test.CheckFalse(isActive)
+			test.CheckFalse(isOpen)
+			// string, because checks package have not == operator for time.Time
+			test.CheckEqual(endTime.String(), task.End.Truncate(time.Second).String())
+		}
+		rows.Close()
+		d.CloseConnection(conn)
 	}
 
 	task.Title = "Title"
 	task.Description = "Description"
 	task.Priority = 1
 	task.UpdateInDb()
-	time.Sleep(800 * time.Millisecond)
-	rows, err = d.Exec(`SELECT title, descr, priority FROM tasks WHERE id = $1;`, task.TaskID)
-	test.CheckEqual(err, nil)
-	test.CheckTrue(rows.Next())
 	{
-		var title, description string
-		var priority int8
-		test.CheckEqual(rows.Scan(&title, &description, &priority), nil)
-		test.CheckEqual(title, task.Title)
-		test.CheckEqual(description, task.Description)
-		test.CheckEqual(priority, task.Priority)
+		conn, err := d.GetConnection()
+		test.CheckEqual(err, nil)
+		rows, err := d.Exec(db.SELECT, conn,
+			"SELECT title, descr, priority FROM tasks WHERE id = $1;", task.TaskID)
+		test.CheckEqual(err, nil)
+		test.CheckTrue(rows.Next())
+		{
+			var title, description string
+			var priority int8
+			test.CheckEqual(rows.Scan(&title, &description, &priority), nil)
+			test.CheckEqual(title, task.Title)
+			test.CheckEqual(description, task.Description)
+			test.CheckEqual(priority, task.Priority)
+		}
+		rows.Close()
+		d.CloseConnection(conn)
 	}
 
 	task.RemoveSelf()
-	rows, err = d.Exec(`SELECT id FROM tasks WHERE id = $1;`, task.TaskID)
-	test.CheckEqual(err, nil)
-	test.CheckFalse(rows.Next())
+	{
+		conn, err := d.GetConnection()
+		test.CheckEqual(err, nil)
+		rows, err := d.Exec(db.SELECT, conn, "SELECT id FROM tasks WHERE id = $1;", task.TaskID)
+		test.CheckEqual(err, nil)
+		test.CheckFalse(rows.Next())
+		rows.Close()
+		d.CloseConnection(conn)
+	}
 }
 
 func TestTaskSubtasksUsingDatabase(t *testing.T) {
@@ -345,7 +387,7 @@ func TestTaskSubtasksUsingDatabase(t *testing.T) {
 	password := os.Getenv("DB_PASSWORD")
 
 	d, _ := db.NewDatabase(host, uint16(port), database, user, password)
-	ok, err := d.Open()
+	ok, _ := d.Open()
 	test.CheckTrue(ok)
 
 	SetDatabase(d)
@@ -355,25 +397,32 @@ func TestTaskSubtasksUsingDatabase(t *testing.T) {
 	subtask2 := NewTask(task)
 	subtask3 := NewTask(task)
 
-	rows, err := d.Exec(`SELECT id FROM tasks WHERE parent_id = $1;`, task.TaskID)
-	test.CheckEqual(err, nil)
-	test.CheckTrue(rows.Next())
 	{
-		var taskID int64
-		test.CheckEqual(rows.Scan(&taskID), nil)
-		test.CheckEqual(taskID, subtask1.TaskID)
+		conn, err := d.GetConnection()
+		test.CheckEqual(err, nil)
+		rows, err := d.Exec(db.SELECT, conn,
+			"SELECT id FROM tasks WHERE parent_id = $1;", task.TaskID)
+		test.CheckEqual(err, nil)
+		test.CheckTrue(rows.Next())
+		{
+			var taskID int64
+			test.CheckEqual(rows.Scan(&taskID), nil)
+			test.CheckEqual(taskID, subtask1.TaskID)
+		}
+		test.CheckTrue(rows.Next())
+		{
+			var taskID int64
+			test.CheckEqual(rows.Scan(&taskID), nil)
+			test.CheckEqual(taskID, subtask2.TaskID)
+		}
+		test.CheckTrue(rows.Next())
+		{
+			var taskID int64
+			test.CheckEqual(rows.Scan(&taskID), nil)
+			test.CheckEqual(taskID, subtask3.TaskID)
+		}
+		test.CheckFalse(rows.Next())
+		rows.Close()
+		d.CloseConnection(conn)
 	}
-	test.CheckTrue(rows.Next())
-	{
-		var taskID int64
-		test.CheckEqual(rows.Scan(&taskID), nil)
-		test.CheckEqual(taskID, subtask2.TaskID)
-	}
-	test.CheckTrue(rows.Next())
-	{
-		var taskID int64
-		test.CheckEqual(rows.Scan(&taskID), nil)
-		test.CheckEqual(taskID, subtask3.TaskID)
-	}
-	test.CheckFalse(rows.Next())
 }
