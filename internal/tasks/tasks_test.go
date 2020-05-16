@@ -1,16 +1,39 @@
 package tasks
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"math"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"strconv"
 	"testing"
 	"time"
 
+	"github.com/gin-gonic/gin"
+
 	db "../database"
 	test "github.com/chukak/task-manager/pkg/checks"
 )
+
+// Http server
+func InitTestServer(req string, path string, handler gin.HandlerFunc, data string) (*gin.Engine,
+	*httptest.ResponseRecorder, *http.Request) {
+	r := gin.Default()
+	if req == "GET" {
+		r.GET(path, handler)
+	} else if req == "POST" {
+		r.POST(path, handler)
+	}
+
+	w := httptest.NewRecorder()
+	request, _ := http.NewRequest(req, path, bytes.NewBufferString(data))
+	request.Header.Add("Content-Type", gin.MIMEJSON)
+	r.ServeHTTP(w, request)
+	return r, w, request
+}
 
 func TestTaskInitialization(t *testing.T) {
 	test.SetT(t)
@@ -425,4 +448,229 @@ func TestTaskSubtasksUsingDatabase(t *testing.T) {
 		rows.Close()
 		d.CloseConnection(conn)
 	}
+}
+
+func TestTaskHttpWrapper(t *testing.T) {
+	test.SetT(t)
+	gin.SetMode(gin.TestMode)
+
+	var taskContext TaskHTTPContext
+
+	host := os.Getenv("DB_HOST")
+	val, _ := strconv.Atoi(os.Getenv("DB_PORT"))
+	port := uint16(val)
+	database := os.Getenv("DB_NAME")
+	user := os.Getenv("DB_USER")
+	password := os.Getenv("DB_PASSWORD")
+	d, _ := db.NewDatabase(host, uint16(port), database, user, password)
+	d.Open()
+	{
+		_, wr, _ := InitTestServer("POST", "/new", taskContext.NewTaskRequest,
+			"{\"parent\":null}")
+		test.CheckEqual(wr.Code, 200)
+		test.CheckTrue(len(wr.Body.String()) > 0)
+		jsonBody := JSONBody{}
+		json.Unmarshal(wr.Body.Bytes(), &jsonBody)
+
+		var ID interface{}
+		ID, ok := jsonBody["id"]
+		test.CheckTrue(ok)
+		i := int64(ID.(float64))
+		test.CheckTrue(i > 0)
+		p, ok := taskPointers[i]
+		test.CheckTrue(ok)
+		test.CheckNotEqual(p, nil)
+
+		conn, err := d.GetConnection()
+		test.CheckEqual(err, nil)
+		rows, err := d.Exec(db.SELECT, conn,
+			"SELECT id FROM tasks WHERE id = $1;", p.TaskID)
+		test.CheckEqual(err, nil)
+		test.CheckTrue(rows.Next())
+		rows.Close()
+		d.CloseConnection(conn)
+	}
+	{
+		task := NewTask(nil)
+
+		data := fmt.Sprintf("{\"id\":%v,\"open\":true}", task.TaskID)
+		_, wr, _ := InitTestServer("POST", "/open", taskContext.OpenTaskRequest, data)
+		test.CheckEqual(wr.Code, 200)
+		test.CheckTrue(len(wr.Body.String()) > 0)
+		jsonBody := JSONBody{}
+		json.Unmarshal(wr.Body.Bytes(), &jsonBody)
+
+		var ID interface{}
+		ID, ok := jsonBody["id"]
+		test.CheckTrue(ok)
+		i := int64(ID.(float64))
+		p, ok := taskPointers[i]
+		test.CheckTrue(i > 0)
+		test.CheckTrue(ok)
+		test.CheckNotEqual(p, nil)
+
+		conn, err := d.GetConnection()
+		test.CheckEqual(err, nil)
+		rows, err := d.Exec(db.SELECT, conn,
+			"SELECT is_open FROM tasks WHERE id = $1;", p.TaskID)
+		test.CheckEqual(err, nil)
+		test.CheckTrue(rows.Next())
+		{
+			var isOpen bool
+			test.CheckEqual(rows.Scan(&isOpen), nil)
+			test.CheckTrue(isOpen)
+		}
+		rows.Close()
+		d.CloseConnection(conn)
+		task.Open(false)
+	}
+	{
+		task := NewTask(nil)
+		task.Open(true)
+
+		data := fmt.Sprintf("{\"id\": %v,\"active\": true}", task.TaskID)
+		_, wr, _ := InitTestServer("POST", "/active", taskContext.ActiveTaskRequest, data)
+		test.CheckEqual(wr.Code, 200)
+		test.CheckTrue(len(wr.Body.String()) > 0)
+		jsonBody := JSONBody{}
+		json.Unmarshal(wr.Body.Bytes(), &jsonBody)
+
+		var ID interface{}
+		ID, ok := jsonBody["id"]
+		test.CheckTrue(ok)
+		i := int64(ID.(float64))
+		p, ok := taskPointers[i]
+		test.CheckTrue(i > 0)
+		test.CheckTrue(ok)
+		test.CheckNotEqual(p, nil)
+
+		conn, err := d.GetConnection()
+		test.CheckEqual(err, nil)
+		rows, err := d.Exec(db.SELECT, conn,
+			"SELECT is_active FROM tasks WHERE id = $1;", p.TaskID)
+		test.CheckEqual(err, nil)
+		test.CheckTrue(rows.Next())
+		{
+			var isOpen bool
+			test.CheckEqual(rows.Scan(&isOpen), nil)
+			test.CheckTrue(isOpen)
+		}
+		rows.Close()
+		d.CloseConnection(conn)
+		task.Open(false)
+	}
+	{
+		task := NewTask(nil)
+		task.Title = "title"
+		task.Description = "description"
+		task.Priority = 4
+
+		data := fmt.Sprintf("{\"id\":%v}", task.TaskID)
+		_, wr, _ := InitTestServer("POST", "/get", taskContext.GetTaskDataRequest, data)
+		test.CheckEqual(wr.Code, 200)
+		test.CheckTrue(len(wr.Body.String()) > 0)
+		jsonBody := JSONBody{}
+		json.Unmarshal(wr.Body.Bytes(), &jsonBody)
+
+		var ID interface{}
+		ID, ok := jsonBody["id"]
+		test.CheckTrue(ok)
+		i := int64(ID.(float64))
+		p, ok := taskPointers[i]
+		test.CheckTrue(i > 0)
+		test.CheckTrue(ok)
+		test.CheckNotEqual(p, nil)
+
+		title := jsonBody["title"]
+		test.CheckEqual(title.(string), task.Title)
+		desc := jsonBody["description"]
+		test.CheckEqual(desc.(string), task.Description)
+		prior := jsonBody["priority"]
+		test.CheckEqual(int8(prior.(float64)), task.Priority)
+	}
+	{
+		task := NewTask(nil)
+
+		data := fmt.Sprintf(`{"id":%v,"title":"task title", 
+				"description":"description task","priority":5}`, task.TaskID)
+		_, wr, _ := InitTestServer("POST", "/update", taskContext.UpdateTaskRequest, data)
+		test.CheckEqual(wr.Code, 200)
+		test.CheckTrue(len(wr.Body.String()) > 0)
+		jsonBody := JSONBody{}
+		json.Unmarshal(wr.Body.Bytes(), &jsonBody)
+
+		var ID interface{}
+		ID, ok := jsonBody["id"]
+		test.CheckTrue(ok)
+		i := int64(ID.(float64))
+		p, ok := taskPointers[i]
+		test.CheckTrue(i > 0)
+		test.CheckTrue(ok)
+		test.CheckNotEqual(p, nil)
+
+		test.CheckEqual(p.Title, "task title")
+		test.CheckEqual(p.Description, "description task")
+		test.CheckEqual(p.Priority, 5)
+
+		conn, err := d.GetConnection()
+		test.CheckEqual(err, nil)
+		rows, err := d.Exec(db.SELECT, conn,
+			"SELECT title, descr, priority FROM tasks WHERE id = $1;", p.TaskID)
+		test.CheckEqual(err, nil)
+		test.CheckTrue(rows.Next())
+		{
+			var title, desc string
+			var prior int8
+			test.CheckEqual(rows.Scan(&title, &desc, &prior), nil)
+			test.CheckEqual(title, "task title")
+			test.CheckEqual(desc, "description task")
+			test.CheckEqual(prior, 5)
+		}
+		rows.Close()
+		d.CloseConnection(conn)
+	}
+	{
+		task := NewTask(nil)
+
+		data := fmt.Sprintf("{\"id\":%v}", task.TaskID)
+		_, wr, _ := InitTestServer("POST", "/remove", taskContext.RemoveTaskRequest, data)
+		test.CheckEqual(wr.Code, 200)
+		test.CheckTrue(len(wr.Body.String()) == 0)
+		jsonBody := JSONBody{}
+		json.Unmarshal(wr.Body.Bytes(), &jsonBody)
+
+		conn, err := d.GetConnection()
+		test.CheckEqual(err, nil)
+		rows, err := d.Exec(db.SELECT, conn,
+			"SELECT id FROM tasks WHERE id = $1;", task.TaskID)
+		test.CheckEqual(err, nil)
+		test.CheckFalse(rows.Next())
+		rows.Close()
+		d.CloseConnection(conn)
+	}
+}
+
+func TestTaskListHttpWrapper(t *testing.T) {
+	test.SetT(t)
+	gin.SetMode(gin.TestMode)
+
+	// todo: clear task list
+	listTaskPointer = &ListTask{}
+
+	var taskContext TaskHTTPContext
+
+	task1 := NewTask(nil)
+	task2 := NewTask(nil)
+	task3 := NewTask(nil)
+
+	_, wr, _ := InitTestServer("GET", "/list", taskContext.AllTasksRequest, "")
+	test.CheckEqual(wr.Code, 200)
+	test.CheckTrue(len(wr.Body.String()) > 0)
+	listTask := ListTask{}
+	json.Unmarshal(wr.Body.Bytes(), &listTask)
+
+	test.CheckEqual(len(listTask.List), 3)
+	test.CheckEqual(task1.TaskID, listTask.List[0].TaskID)
+	test.CheckEqual(task2.TaskID, listTask.List[1].TaskID)
+	test.CheckEqual(task3.TaskID, listTask.List[2].TaskID)
 }

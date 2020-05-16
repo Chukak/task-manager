@@ -34,7 +34,7 @@ func getJSONValueByKey(e *interface{}, body *JSONBody, key string) bool {
 	var ok bool
 	*e, ok = (*body)[key]
 	if !ok {
-		msg := fmt.Sprintf("JSON body does have a key '%s'.", key)
+		msg := fmt.Sprintf("JSON body does not have a key '%s'.", key)
 		log.Println(msg)
 	}
 	return ok
