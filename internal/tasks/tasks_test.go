@@ -674,3 +674,79 @@ func TestTaskListHttpWrapper(t *testing.T) {
 	test.CheckEqual(task2.TaskID, listTask.List[1].TaskID)
 	test.CheckEqual(task3.TaskID, listTask.List[2].TaskID)
 }
+
+func TestTaskLoadFromDb(t *testing.T) {
+	test.SetT(t)
+
+	taskPointers = map[int64]*Task{}
+
+	host := os.Getenv("DB_HOST")
+	val, _ := strconv.Atoi(os.Getenv("DB_PORT"))
+	port := uint16(val)
+	database := os.Getenv("DB_NAME")
+	user := os.Getenv("DB_USER")
+	password := os.Getenv("DB_PASSWORD")
+	d, _ := db.NewDatabase(host, uint16(port), database, user, password)
+	d.Open()
+	// clear tables
+	conn, _ := d.GetConnection()
+	d.Exec(db.DELETE, conn, "TRUNCATE tasks CASCADE;")
+	d.CloseConnection(conn)
+
+	var taskIDs [10]int64
+	for i := 0; i < 10; i++ {
+		conn, _ := d.GetConnection()
+		result, err := d.Exec(db.SELECT, conn, "INSERT INTO task_duration DEFAULT VALUES RETURNING id")
+		test.CheckEqual(err, nil)
+
+		var durationID int = -1
+		test.CheckTrue(result.Next())
+		result.Scan(&durationID)
+		d.CloseConnection(conn)
+
+		conn, _ = d.GetConnection()
+		result, err = execSQL(db.SELECT,
+			"INSERT INTO tasks (duration_id) VALUES ($1) RETURNING id", durationID)
+		test.CheckEqual(err, nil)
+
+		var taskID int64 = -1
+		test.CheckTrue(result.Next())
+		result.Scan(&taskID)
+		d.CloseConnection(conn)
+
+		taskIDs[i] = taskID
+	}
+
+	taskList := NewListTask()
+	taskList.LoadFromDb()
+
+	test.CheckEqual(len(taskList.List), 10)
+	test.CheckEqual(len(taskPointers), 10)
+
+	for i := 0; i < 10; i++ {
+		task := taskList.List[i]
+
+		test.CheckEqual(task.TaskID, taskIDs[i])
+		test.CheckEqual(taskPointers[taskIDs[i]], task)
+	}
+}
+
+func TestTaskInactiveAll(t *testing.T) {
+	test.SetT(t)
+
+	taskList := NewListTask()
+	for i := 0; i < 10; i++ {
+		task := NewTask(nil)
+		task.Open(true)
+		task.SetActive(true)
+
+		test.CheckTrue(task.IsOpened)
+		test.CheckTrue(task.IsActive)
+	}
+
+	taskList.InactiveAllTasks()
+
+	for _, t := range taskList.List {
+		test.CheckFalse(t.IsActive)
+	}
+}

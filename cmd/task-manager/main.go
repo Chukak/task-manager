@@ -25,7 +25,7 @@ func main() {
 	task.SetDatabase(d)
 
 	tasks := task.NewListTask()
-	_ = tasks
+	tasks.LoadFromDb()
 
 	var taskContext task.TaskHTTPContext
 
@@ -43,6 +43,8 @@ func main() {
 			_ = sig
 			log.Println("Stopping server...")
 			r.Stop()
+
+			tasks.InactiveAllTasks()
 			os.Exit(0)
 		}
 	}()

@@ -49,6 +49,8 @@ type Task struct {
 type ListTaskManage interface {
 	Append(*Task)
 	Remove(*Task)
+	LoadFromDb()
+	InactiveAllTasks()
 }
 
 // ListTask stores all tasks
@@ -138,6 +140,11 @@ func (t *Task) RemoveSubtask(oldSubtask *Task) {
 		t.Subtasks = append(t.Subtasks[:index], t.Subtasks[index+1:]...)
 	}
 
+	if listTaskPointer != nil {
+		listTaskPointer.Remove(t)
+	}
+	delete(taskPointers, t.TaskID)
+
 	execSQL(db.DELETE, "DELETE FROM tasks WHERE id = $1;", oldSubtask.TaskID)
 }
 
@@ -200,6 +207,11 @@ func (t *Task) RemoveSelf() {
 	t.Subtasks = nil
 	t.parent = nil
 
+	if listTaskPointer != nil {
+		listTaskPointer.Remove(t)
+	}
+	delete(taskPointers, t.TaskID)
+
 	execSQL(db.DELETE, "DELETE FROM tasks WHERE id = $1 OR parent_id = $1;", t.TaskID)
 }
 
@@ -230,5 +242,49 @@ func (l *ListTask) Remove(t *Task) {
 	}
 	if index > -1 {
 		l.List = append(l.List[:index], l.List[index+1:]...)
+	}
+}
+
+// LoadFromDb loading task data from database
+func (l *ListTask) LoadFromDb() {
+	result, _ := execSQL(db.SELECT,
+		`SELECT t.id, t.parent_id, t.start_time, t.end_time, t.is_open, t.is_active, 
+			t.title, t.descr, t.priority, d.second, d.minute, d.hour, d.day 
+			FROM tasks AS t JOIN task_duration AS d ON t.duration_id = d.id 
+			ORDER BY parent_id;`)
+	for result.Next() {
+		var taskID, parentID int64
+		var start, end time.Time
+		var title, description string
+		var priority int8
+		var open, active bool
+		var sec, min, hour, day int
+
+		result.Scan(&taskID, &parentID, &start, &end, &open, &active,
+			&title, &description, &priority, &sec, &min, &hour, &day)
+		var parent *Task = nil
+		if parentID > 0 {
+			parent = taskPointers[parentID]
+		}
+
+		task := &Task{parent: parent, Start: start, End: end, ticker: timers.NewCountdownTimer(),
+			running: 0, Subtasks: []*Task{},
+			Duration: TaskDuration{Seconds: sec, Minutes: min, Hours: hour, Days: day},
+			IsActive: false, IsOpened: open, Title: title, Description: description,
+			Priority: priority, TaskID: taskID}
+
+		listTaskPointer.Append(task)
+		taskPointers[taskID] = task
+
+		if parent != nil {
+			parent.AddSubtask(task)
+		}
+	}
+}
+
+// InactiveAllTasks call SetActive(false) on every task in the list
+func (l *ListTask) InactiveAllTasks() {
+	for _, t := range l.List {
+		t.SetActive(false)
 	}
 }
