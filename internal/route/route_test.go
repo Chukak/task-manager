@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func TestRouteInitializationr(t *testing.T) {
+func TestRouteInitialization(t *testing.T) {
 	test.SetT(t)
 	gin.SetMode(gin.ReleaseMode)
 

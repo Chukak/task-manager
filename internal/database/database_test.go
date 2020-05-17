@@ -23,11 +23,11 @@ func TestDatabaseInitialization(t *testing.T) {
 
 	db, err := NewDatabase(host, port, database, user, password)
 	test.CheckEqual(err, nil)
-	test.CheckEqual(db.config.Host, host)
-	test.CheckEqual(db.config.Port, port)
-	test.CheckEqual(db.config.Database, database)
-	test.CheckEqual(db.config.User, user)
-	test.CheckEqual(db.config.Password, password)
+	test.CheckEqual(db.config.ConnConfig.Host, host)
+	test.CheckEqual(db.config.ConnConfig.Port, port)
+	test.CheckEqual(db.config.ConnConfig.Database, database)
+	test.CheckEqual(db.config.ConnConfig.User, user)
+	test.CheckEqual(db.config.ConnConfig.Password, password)
 }
 
 func TestDatabaseFunctionality(t *testing.T) {
@@ -45,7 +45,10 @@ func TestDatabaseFunctionality(t *testing.T) {
 	test.CheckTrue(ok)
 	test.CheckEqual(err, nil)
 
-	rows, err := db.Exec("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';")
+	conn, err := db.GetConnection()
+	test.CheckEqual(err, nil)
+	rows, err := db.Exec(SELECT, conn,
+		"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';")
 	test.CheckEqual(err, nil)
 	// two tables
 	test.CheckTrue(rows.Next())
@@ -55,6 +58,7 @@ func TestDatabaseFunctionality(t *testing.T) {
 	test.CheckEqual(rows.Scan(&names[1]), nil)
 	test.CheckNotEqual(len(names[0]), 0)
 	test.CheckNotEqual(len(names[1]), 0)
+	db.CloseConnection(conn)
 
 	ok, err = db.Close()
 	test.CheckTrue(ok)
@@ -75,9 +79,13 @@ func TestDatabaseInvalidConfig(t *testing.T) {
 	test.CheckFalse(ok)
 	test.CheckNotEqual(err, nil)
 
-	rows, err := db.Exec("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';")
+	conn, err := db.GetConnection()
 	test.CheckNotEqual(err, nil)
-	test.CheckEqual(err.Error(), "database is not open")
+	rows, err := db.Exec(SELECT, conn,
+		"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';")
+	test.CheckNotEqual(err, nil)
+	test.CheckEqual(err.Error(), "connection is null")
+	db.CloseConnection(conn)
 	// nothing to do, otherwise SEGFAULT!
 	_ = rows
 }
