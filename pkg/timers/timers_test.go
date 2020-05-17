@@ -1,12 +1,15 @@
 package timers
 
 import (
+	"math"
 	"testing"
 	"time"
 
 	test "github.com/chukak/task-manager/pkg/checks"
 	utility "github.com/chukak/task-manager/pkg/utility"
 )
+
+const EPSILON float64 = 1.0
 
 func TestElapsedTimer(t *testing.T) {
 	elapsed := NewElapsedTimer()
@@ -118,7 +121,10 @@ func TestCountdownTimer(t *testing.T) {
 		min := i / 60 % 60
 		select {
 		case <-countdownTimer.Tick:
-			test.CheckEqual(countdownTimer.Sec, sec)
+			// check seconds with epsilon
+			test.CheckTrue((countdownTimer.Sec == sec) ||
+				(math.Abs(float64(countdownTimer.Sec-sec)) == EPSILON))
+
 			test.CheckEqual(countdownTimer.Min, min)
 			test.CheckEqual(countdownTimer.Hours, 0)
 			test.CheckEqual(countdownTimer.Days, 0)

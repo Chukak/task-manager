@@ -81,8 +81,8 @@ test-src: | remove-db prepare-db
 
 test-package:
 	@echo Running package tests...
-	GOPATH=$(GOPATH) GOBIN=$(GOBIN) go test $(TIMERS_PACKAGE_FILES)
-	GOPATH=$(GOPATH) GOBIN=$(GOBIN) go test $(CHECKS_PACKAGE_FILES)
+	GOPATH=$(GOPATH) GOBIN=$(GOBIN) go test -v $(TIMERS_PACKAGE_FILES)
+	GOPATH=$(GOPATH) GOBIN=$(GOBIN) go test -v $(CHECKS_PACKAGE_FILES)
 
 test-all: | test-src test-package
 
