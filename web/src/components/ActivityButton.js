@@ -1,41 +1,24 @@
-import React from 'react'
+import React from 'react';
 import { Button } from '@material-ui/core'
 
+const PrimaryColor = "primary";
+const SecondaryColor = "secondary";
+const DefaultColor = "default";
+
 export default class ActivityButton extends React.Component {
-	constructor(props) {
-		super(props)
-
-		this.state = {
-			active: this.props.isActive,
-			color: this.props.isActive ? "primary" : "secondary"
-		};
-
-		this.changeActive = this.changeActive.bind(this)
-	}
-
-	changeActive() {
-		var data = {}
-		data[this.props.nameChangedProperty] = !this.state.active
-		data["id"] = this.props.TaskID
-
-		this.props.onChangeValueHandler(data)
-			.then(function(response) {
-			this.props.onClickHandler()
-		}.bind(this))
-
-		this.setState(state => ({
-			active: !state.active,
-			color: !state.active ? "primary" : "secondary"
-		}));
-	}
-
 	render() {
-		return <Button 
-			variant="contained" 
-			size="large"
-			color={this.state.color}
-			onClick={this.changeActive}>
-			{this.props.buttonName}
+		var firstColor = PrimaryColor;
+		var secondColor = SecondaryColor;
+
+		if (this.props.colorChange === "no") {
+			firstColor = DefaultColor;
+			secondColor = DefaultColor;
+		}
+
+		return <Button variant="contained" size="large"
+			color={this.props.isActive ? firstColor : secondColor} 
+			onClick={() => { this.props.onChange(!this.props.isActive); }}>
+			{this.props.isActive ? this.props.buttonNameOff : this.props.buttonNameOn}
 		</Button>
 	}
 }

@@ -108,7 +108,7 @@ remove-db:
 	@echo Removing test database...
 	sudo -H -u postgres psql < $(SQL_FILES_DIRECTORY)/clear.sql
 
-clean: | react-clean remove-test-db
+clean: | react-clean remove-db
 	@echo Clean bin/$(PROJECT_NAME)
 	GOPATH=$(GOPATH) GOBIN=$(GOBIN) go clean; \
 	rm -f bin/$(PROJECT_NAME) \

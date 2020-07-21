@@ -1,26 +1,26 @@
 import ReactDOM from 'react-dom';
 import React from 'react';
-import ListTasks from './components/ListTasks';
-import MenuBar from './components/MenuBar'
-import { Container } from '@material-ui/core'
+import MenuBar from './components/MenuBar';
+import TaskView from './components/TaskView';
+import { Container } from '@material-ui/core';
 
 class Main extends React.Component {
 	constructor(props) {
-		super(props)
+		super(props);
 
-		this.state = {
-			listTaskRef: React.createRef()
-		}
+		this.taskViewRef = React.createRef();
 	}
 
 	render() {
-		var listTasks = <ListTasks ref={this.state.listTaskRef} />
-
 		return (
 			<div>
-				<MenuBar listTask={this.state.listTaskRef} />
-				<Container  fixed>
-					{listTasks}
+				<MenuBar onCallAction={(action) => {
+					if (this.taskViewRef) {
+						this.taskViewRef.current.callAction(action);
+					}
+				}}/>
+				<Container fixed>
+					<TaskView ref={this.taskViewRef} />
 				</Container>
 			</div>)
 	}

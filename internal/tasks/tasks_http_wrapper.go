@@ -19,8 +19,9 @@ type TaskHTTPWrapper interface {
 	ActiveTaskRequest(*gin.Context)
 	RemoveTaskRequest(*gin.Context)
 	UpdateTaskRequest(*gin.Context)
-	AllTasksRequest(*gin.Context)
+	AllTaskRequest(*gin.Context)
 	GetTaskDataRequest(*gin.Context)
+	GetTaskTimerDataRequest(*gin.Context)
 	updateList()
 }
 
@@ -49,6 +50,7 @@ func (tc *TaskHTTPContext) InitRoutes(r *route.Route, group string) {
 	r.AddRequest(group, route.POST, "/task/remove", tc.RemoveTaskRequest)
 	r.AddRequest(group, route.POST, "/task/update", tc.UpdateTaskRequest)
 	r.AddRequest(group, route.POST, "/task/get", tc.GetTaskDataRequest)
+	r.AddRequest(group, route.POST, "/task/timer", tc.GetTaskTimerDataRequest)
 }
 
 // NewTaskRequest is a wrapper to create a task
@@ -173,7 +175,7 @@ func (tc *TaskHTTPContext) UpdateTaskRequest(c *gin.Context) {
 	}
 }
 
-// AllTasksRequest is a wrapper to get all the tasks
+// AllTasksRequest get list of less information of tasks
 func (tc *TaskHTTPContext) AllTasksRequest(c *gin.Context) {
 	tc.updateList()
 
@@ -181,8 +183,14 @@ func (tc *TaskHTTPContext) AllTasksRequest(c *gin.Context) {
 	if list == nil {
 		list = &ListTask{}
 	}
+
+	var tasks []LessTaskInfo
+	for _, t := range list.List {
+		tasks = append(tasks, LessTaskInfo{TaskID: t.TaskID, Title: t.Title})
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"listTasks": list.List,
+		"listTasks": tasks,
 	})
 }
 
@@ -205,6 +213,23 @@ func (tc *TaskHTTPContext) GetTaskDataRequest(c *gin.Context) {
 			"opened":      task.IsOpened,
 			"start":       task.Start.Truncate(time.Second),
 			"end":         task.End.Truncate(time.Second),
+		})
+	}
+}
+
+// GetTaskTimerDataRequest get data of task duration
+func (tc *TaskHTTPContext) GetTaskTimerDataRequest(c *gin.Context) {
+	body := JSONBody{}
+	_ = c.Bind(&body)
+
+	var id interface{}
+	if !getJSONValueByKey(&id, &body, "id") {
+		return
+	}
+	if task, ok := taskPointers[int64(id.(float64))]; ok {
+		c.JSON(http.StatusOK, gin.H{
+			"id":       task.TaskID,
+			"duration": task.Duration,
 		})
 	}
 }

@@ -45,6 +45,12 @@ type Task struct {
 	TaskID      int64  `json:"taskID"`
 }
 
+// LessTaskInfo show a less information of this task
+type LessTaskInfo struct {
+	TaskID int64  `json:"taskID"`
+	Title  string `json:"title"`
+}
+
 // ListTaskManage is a common interface for task lists
 type ListTaskManage interface {
 	Append(*Task)
@@ -179,13 +185,19 @@ func (t *Task) SetActive(active bool) {
 			t.ticker.Run()
 
 			go func() {
+				cachedSeconds := t.Duration.Seconds
+				cachedMinutes := t.Duration.Minutes
+				cachedHours := t.Duration.Hours
+				cachedDays := t.Duration.Days
+
 				for atomic.LoadInt32(&t.running) > 0 {
 					select {
 					case <-t.ticker.Tick:
-						t.Duration.Seconds = t.ticker.Sec
-						t.Duration.Minutes = t.ticker.Min
-						t.Duration.Hours = t.ticker.Hours
-						t.Duration.Days = t.ticker.Days
+						// current durarion = cached (last duration) + current ticks
+						t.Duration.Seconds = cachedSeconds + t.ticker.Sec
+						t.Duration.Minutes = cachedMinutes + t.ticker.Min
+						t.Duration.Hours = cachedHours + t.ticker.Hours
+						t.Duration.Days = cachedDays + t.ticker.Days
 						execSQL(db.UPDATE,
 							`UPDATE task_duration SET second = $1, minute = $2, hour = $3, day = $4 
 							WHERE id IN (SELECT duration_id FROM tasks WHERE id = $5);`,
@@ -252,6 +264,12 @@ func (l *ListTask) LoadFromDb() {
 			t.title, t.descr, t.priority, d.second, d.minute, d.hour, d.day 
 			FROM tasks AS t JOIN task_duration AS d ON t.duration_id = d.id 
 			ORDER BY parent_id;`)
+
+	if result == nil {
+		log.Println("SQL result is empty!")
+		return
+	}
+
 	for result.Next() {
 		var taskID, parentID int64
 		var start, end time.Time

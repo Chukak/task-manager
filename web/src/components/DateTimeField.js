@@ -1,49 +1,24 @@
-import React from 'react'
-import { TextField, Box } from '@material-ui/core'
+import React from 'react';
+import { Typography } from '@material-ui/core';
+import { styled } from '@material-ui/core/styles';
+import { compose, spacing, palette, shadows } from '@material-ui/system';
 
-const dateLength = 10;
+const StyledBox = styled('div')(compose(spacing, palette, shadows));
+const EmptyDateTime = " 0000-00-00 00:00:00 ";
 
 export default class DataTimeField extends React.Component {
-	constructor(props) {
-		super(props)
-
-		let dt = props.dateTime;
-		this.state =  {
-			date: dt.substring(0, dateLength),
-			time: dt.substring(dateLength + 1, dateLength + 1 + 8)
-		}
-	}
-
-	update(data) {
-		let dt = data.dateTime;
-		this.setState({
-			date: dt.substring(0, dateLength),
-			time: dt.substring(dateLength + 1, dateLength + 1 + 8)
-		})
-	}
-
 	render() {
-		return <Box p={2}>
-			<TextField 
-				id="date" 
-				value={this.state.date} 
-				type="date" 
-				InputLabelProps={{
-					shrink: true,
-				}} 
-				InputProps={{
-					disableUnderline: true,
-				 }} />
-			<TextField 
-				id="time"
-				value={this.state.time}
-				type="time" 
-				InputLabelProps={{
-					shrink: true,
-				}} 
-				InputProps={{
-					disableUnderline: true,
-				}} />
-		</Box>
+		var text = EmptyDateTime;
+		if (this.props.date !== "") {
+			text = this.props.date + " " + this.props.time;
+		}
+
+		return <StyledBox boxShadow={2} bgcolor="#3f51b5" color="white"
+				fontWeight="fontWeightBold" fontFamily="Monospace" 
+				height="100%" p="4px">
+				<Typography variant="h6">
+					{text}
+				</Typography>
+			</StyledBox>
 	}
 }

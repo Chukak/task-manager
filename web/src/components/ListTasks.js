@@ -1,13 +1,12 @@
 import React from "react";
-import Task from "./Task";
-import { List } from '@material-ui/core'
-import { GetAllTasks } from './Request'
-
-const axios = require('axios');
+import TaskItem from './TaskItem';
+import { List, Box, Paper } from '@material-ui/core';
+import { GetAllTasks } from './Request';
 
 export default class ListTasks extends React.Component {
 	constructor(props) {
 		super(props);
+
 		this.state = {
 			listTasks: []
 		};
@@ -16,30 +15,28 @@ export default class ListTasks extends React.Component {
 	update() {
 		GetAllTasks()
 			.then(function(response) {
-				var l = response.data.listTasks
+				var reloadPage = response.data.listTasks.length < this.state.listTasks.length;
 				this.setState({
-					listTasks: l === null ? [] : l
+					listTasks: response.data.listTasks
 				});
-			}.bind(this))
+				if (reloadPage) {
+					window.location.reload(false);
+				}
+			}.bind(this));
 	}
 
 	componentDidMount() {
-		if (this.props.hasSubtasks) {
-			this.setState({
-				listTasks: this.props.listTasks
-			});
-		} else {
-			this.update()
-		}
+		this.update();
 	}
 
 	render() {
-		return <div>
-			<List>
+		return <Paper style={{minWidth: 300, maxHeight: 600, overflow: 'auto'}}>
+				<List>
 				{this.state.listTasks.map((t, index) => {
-					return <Task key={index} ikey={index} taskData={t} />
+					return <TaskItem key={index} ikey={index} taskTitle={t.title} taskID={t.taskID} 
+						onClickItem={(id, obj) => { this.props.onSelectTask(id, obj); }}/>
 				})}
 			</List>
-		</div>
+		</Paper>
 	}
 }

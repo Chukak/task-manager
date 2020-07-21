@@ -1,10 +1,9 @@
-import React from 'react'
+import React from 'react';
 import { AppBar, Toolbar, Typography, IconButton,
-	Popper, MenuList, MenuItem, ListItemIcon, 
-	Box } from '@material-ui/core'
-import { Menu, Add } from '@material-ui/icons'
+	Popper, MenuList, MenuItem, ListItemIcon, Box } from '@material-ui/core';
+import { Menu, Add, Remove } from '@material-ui/icons';
 import { makeStyles } from "@material-ui/core/styles";
-import { CreateNewTask } from './Request'
+
 
 
 const userStyles = makeStyles(theme => ({
@@ -21,15 +20,6 @@ export default function MenuBar(props) {
   const handleClick = event => {
     setAnchorEl(anchorEl ? null : event.currentTarget);
 	};
-	
-	const refListTask = props.listTask
-
-	const handleMenuClick = event => {
-		console.log(refListTask)
-		CreateNewTask().then(function(response) {
-			refListTask.current.update();
-		});
-	}
 
   const open = Boolean(anchorEl);
 
@@ -51,12 +41,22 @@ export default function MenuBar(props) {
 				placement="bottom">
 				<div className={classes.paper}>
 					<MenuList>
-						<MenuItem onClick={handleMenuClick}>
+						<MenuItem onClick={() => { props.onCallAction("create"); }}>
 							<ListItemIcon >
 								<Add />
 								<Box pr={3}>
 									<Typography variant="subtitle1">
 										Create task
+									</Typography>
+								</Box>
+							</ListItemIcon>
+						</MenuItem>
+						<MenuItem onClick={() => { props.onCallAction("remove"); }}>
+							<ListItemIcon >
+								<Remove />
+								<Box pr={3}>
+									<Typography variant="subtitle1">
+										Delete task
 									</Typography>
 								</Box>
 							</ListItemIcon>
