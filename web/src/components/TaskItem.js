@@ -1,8 +1,10 @@
-import React from 'react';
-import { ListItem, MenuItem, ListItemText, Box } from '@material-ui/core';
+import React from "react";
+import { MenuItem, ListItemText, Box } from "@material-ui/core";
 
-const UnknowTitle = "<Unknown>"
-const SetTitle = (title) => { return title === "" ? UnknowTitle : title; };
+const UnknowTitle = "<Unknown>";
+const SetTitle = (title) => {
+	return title === "" ? UnknowTitle : title;
+};
 
 export default class TaskItem extends React.Component {
 	constructor(props) {
@@ -17,7 +19,7 @@ export default class TaskItem extends React.Component {
 	}
 
 	clearSelection() {
-		this.setState({isSelected: false});
+		this.setState({ isSelected: false });
 	}
 
 	updateItemData(data) {
@@ -30,15 +32,19 @@ export default class TaskItem extends React.Component {
 
 	render() {
 		/** todo: subtasks */
-		return <Box mb={1.5} mt={0.3} border={1} borderColor="primary.main" borderRadius={6}>
-			<MenuItem button key={this.props.ikey} 
-				onClick={() => { 
-					this.props.onClickItem(this.taskID, this); 
-					this.setState({isSelected: true});
-				}}
-				selected={this.state.isSelected}>
-				<ListItemText primary={this.state.taskTitle} />
-			</MenuItem>
-		</Box>
+		return (
+			<Box mb={1.5} mt={0.3} border={1} borderColor="primary.main" borderRadius={6}>
+				<MenuItem
+					button
+					key={this.props.ikey}
+					onClick={() => {
+						this.props.onClickItem(this.taskID, this);
+						this.setState({ isSelected: true });
+					}}
+					selected={this.state.isSelected}>
+					<ListItemText primary={this.state.taskTitle} />
+				</MenuItem>
+			</Box>
+		);
 	}
-};
+}

@@ -1,5 +1,5 @@
-import React from 'react';
-import { Button } from '@material-ui/core'
+import React from "react";
+import { Button } from "@material-ui/core";
 
 const PrimaryColor = "primary";
 const SecondaryColor = "secondary";
@@ -15,10 +15,16 @@ export default class ActivityButton extends React.Component {
 			secondColor = DefaultColor;
 		}
 
-		return <Button variant="contained" size="large"
-			color={this.props.isActive ? firstColor : secondColor} 
-			onClick={() => { this.props.onChange(!this.props.isActive); }}>
-			{this.props.isActive ? this.props.buttonNameOff : this.props.buttonNameOn}
-		</Button>
+		return (
+			<Button
+				variant="contained"
+				size="large"
+				color={this.props.isActive ? firstColor : secondColor}
+				onClick={() => {
+					this.props.onChange(!this.props.isActive);
+				}}>
+				{this.props.isActive ? this.props.buttonNameOff : this.props.buttonNameOn}
+			</Button>
+		);
 	}
 }

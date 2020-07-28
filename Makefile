@@ -64,7 +64,6 @@ react-run:
 	cd $(REACT_BIN_DIRECTORY); \
 	npm start > react.log 2>&1 & \
 
-# todo
 react-stop: 
 	@echo Stopping react...
 	cd $(REACT_BIN_DIRECTORY); \

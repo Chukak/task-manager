@@ -20,8 +20,15 @@ func main() {
 	user := os.Getenv("DB_USER")
 	password := os.Getenv("DB_PASSWORD")
 
-	d, _ := db.NewDatabase(host, port, database, user, password)
-	d.Open()
+	d, err := db.NewDatabase(host, port, database, user, password)
+	if err != nil {
+		log.Println("Failed to connect to database: ", err.Error())
+	}
+	ok, err := d.Open()
+	if !ok {
+		log.Println("Failed to open database: ", err.Error())
+	}
+
 	task.SetDatabase(d)
 
 	tasks := task.NewListTask()

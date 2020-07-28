@@ -1,8 +1,8 @@
-import ReactDOM from 'react-dom';
-import React from 'react';
-import MenuBar from './components/MenuBar';
-import TaskView from './components/TaskView';
-import { Container } from '@material-ui/core';
+import ReactDOM from "react-dom";
+import React from "react";
+import MenuBar from "./components/MenuBar";
+import TaskView from "./components/TaskView";
+import { Container } from "@material-ui/core";
 
 class Main extends React.Component {
 	constructor(props) {
@@ -14,19 +14,19 @@ class Main extends React.Component {
 	render() {
 		return (
 			<div>
-				<MenuBar onCallAction={(action) => {
-					if (this.taskViewRef) {
-						this.taskViewRef.current.callAction(action);
-					}
-				}}/>
+				<MenuBar
+					onCallAction={(action) => {
+						if (this.taskViewRef) {
+							this.taskViewRef.current.callAction(action);
+						}
+					}}
+				/>
 				<Container fixed>
 					<TaskView ref={this.taskViewRef} />
 				</Container>
-			</div>)
+			</div>
+		);
 	}
-};
+}
 
-ReactDOM.render(
-	<Main />,
-	document.getElementById('root')
-);
+ReactDOM.render(<Main />, document.getElementById("root"));
